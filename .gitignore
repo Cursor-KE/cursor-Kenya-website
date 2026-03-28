@@ -1,0 +1,7 @@
+# Local secrets — copy from .env.example and never commit
+.env
+.env.local
+.env.*.local
+
+# Compose overrides (optional)
+**/docker-compose.override.yml
