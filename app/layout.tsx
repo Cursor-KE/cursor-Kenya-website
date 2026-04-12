@@ -23,13 +23,24 @@ export const metadata: Metadata = {
     'Nairobi developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
   openGraph: {
     title: 'Cursor Kenya',
-    description: 'Developer community for AI-assisted coding in Nairobi.',
+    description:
+      'Nairobi developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
     type: 'website',
+    siteName: 'Cursor Kenya',
+    images: [
+      {
+        url: '/opengraph-image.jpg',
+        width: 1024,
+        height: 1024,
+        alt: 'Cursor Kenya — community logo',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Cursor Kenya',
-    description: 'Developer community for AI-assisted coding in Nairobi.',
+    description:
+      'Nairobi developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
   },
 }
 
