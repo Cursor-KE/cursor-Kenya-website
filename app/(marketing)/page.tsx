@@ -79,8 +79,8 @@ export default function HomePage () {
               Cursor Kenya
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-              Nairobi&apos;s home for builders using Cursor and AI-assisted development — meetups,
-              workshops, and a community that ships.
+              Meetups, hackathons, and workshops for builders across Kenya using Cursor and AI to build
+              and ship faster.
             </p>
           </FadeIn>
 
