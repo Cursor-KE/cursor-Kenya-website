@@ -6,14 +6,18 @@ This repo uses [pnpm](https://pnpm.io). Install dependencies and run the dev ser
 
 ```bash
 pnpm install
+cp .env.example .env.local
 pnpm dev
 ```
 
+Copy `.env.example` to `.env.local` and set **`DATABASE_URL`** to your Postgres connection string. The app uses [Drizzle](https://orm.drizzle.team) with [`postgres`](https://github.com/porsager/postgres) ([`lib/db/postgres.ts`](lib/db/postgres.ts)). Hosted providers often use a **transaction pooler** (e.g. port `:6543`); set **`DATABASE_PREPARED_STATEMENTS=false`** in `.env` if you see prepared-statement errors, or use a session/direct URL for the app. For **Drizzle CLI** (`db:migrate`, `db:push`, `db:studio`), set **`DIRECT_URL`** or **`DATABASE_MIGRATE_URL`** to a **direct or session** Postgres URL (usually port `:5432`) — see below.
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Database migrations
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **`pnpm db:migrate`** applies SQL from `drizzle/` using [`pg`](https://www.npmjs.com/package/pg) (dev dependency). **`drizzle.config.ts`** loads `.env` then `.env.local` and uses **`DIRECT_URL`** (or **`DATABASE_MIGRATE_URL`**) when set; otherwise **`DATABASE_URL`**. **Transaction pooler** URLs (often port `:6543`) are rejected for migrations — use a direct or session connection for CLI. Remote hosts use explicit **`ssl`** options for `node-pg`; set **`DATABASE_SSL_STRICT=1`** for strict TLS verification.
+- If **`pnpm db:migrate`** errors with **already exists** / duplicate type or table, the schema is probably already on the database while **`drizzle.__drizzle_migrations`** is empty (e.g. schema applied earlier via **`db:push`** or SQL). Either insert a matching row into **`drizzle.__drizzle_migrations`** (hash = SHA-256 of the migration `.sql` file, **`created_at`** = `when` from `drizzle/meta/_journal.json` for that tag), use **`pnpm db:push`** to align without history, or start from an empty database and run **`pnpm db:migrate`** once.
 
 ## Learn More
 
