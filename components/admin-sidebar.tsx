@@ -8,6 +8,7 @@ import {
   LogOut,
   FileText,
   ListChecks,
+  Sparkles,
 } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
@@ -30,6 +31,7 @@ import {
 const items = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/gallery', label: 'Gallery', icon: ImageIcon },
+  { href: '/admin/community-showcase', label: 'Showcase', icon: Sparkles },
   { href: '/admin/forms', label: 'Forms', icon: FileText },
   { href: '/admin/responses', label: 'Responses', icon: ListChecks },
 ]
