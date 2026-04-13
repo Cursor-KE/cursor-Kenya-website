@@ -14,6 +14,9 @@ export function Footer () {
           <Link href="/gallery" className="hover:text-foreground">
             Gallery
           </Link>
+          <Link href="/community-showcase" className="hover:text-foreground">
+            Showcase
+          </Link>
           <Link href="/about" className="hover:text-foreground">
             About
           </Link>

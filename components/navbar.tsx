@@ -17,6 +17,7 @@ const links = [
   { href: '/', label: 'Home' },
   { href: '/events', label: 'Events' },
   { href: '/gallery', label: 'Gallery' },
+  { href: '/community-showcase', label: 'Showcase' },
   { href: '/about', label: 'About' },
 ]
 

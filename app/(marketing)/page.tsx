@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getNextUpcomingEvent, getLumaEventsSafe } from '@/lib/luma/client'
+import { HomeCommunityShowcase } from '@/components/home-community-showcase'
 import { getFeaturedVideos, getHomeFeaturedImages } from '@/lib/queries'
 import { cn } from '@/lib/utils'
 import { Suspense } from 'react'
@@ -171,6 +172,10 @@ export default function HomePage () {
           </div>
         </div>
       </section>
+
+      <Suspense fallback={null}>
+        <HomeCommunityShowcase />
+      </Suspense>
     </div>
   )
 }
