@@ -168,3 +168,31 @@ export const formsRelations = relations(forms, ({ many }) => ({
 export const formResponsesRelations = relations(formResponses, ({ one }) => ({
   form: one(forms, { fields: [formResponses.formId], references: [forms.id] }),
 }))
+
+export const showcaseStatusEnum = pgEnum('showcase_status', ['pending', 'approved', 'rejected'])
+
+export const communityShowcase = pgTable(
+  'community_showcase',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    projectUrl: text('project_url').notNull(),
+    repoUrl: text('repo_url'),
+    builderName: text('builder_name').notNull(),
+    builderEmail: text('builder_email').notNull(),
+    screenshotUrls: jsonb('screenshot_urls').notNull().$type<string[]>(),
+    status: showcaseStatusEnum('status').notNull().default('pending'),
+    featured: boolean('featured').default(false).notNull(),
+    sortOrder: integer('sort_order').default(0).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [
+    index('community_showcase_status_idx').on(t.status),
+    index('community_showcase_featured_sort_idx').on(t.featured, t.sortOrder),
+  ]
+)
