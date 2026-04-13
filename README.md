@@ -19,7 +19,7 @@ Next.js site for the Nairobi Cursor and AI-assisted coding community: a public m
 - **Admin** (`app/admin/`): sign-in, dashboard, form builder (draft/publish), gallery tooling, and form response review.
 - **Data model** ([`db/schema.ts`](db/schema.ts)): Better Auth tables, `images` / `videos`, `forms` / `form_responses` (JSON field definitions and answers).
 
-## Getting started
+## Getting starte
 
 This repo uses [pnpm](https://pnpm.io).
 
