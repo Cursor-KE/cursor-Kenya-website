@@ -31,7 +31,7 @@ export default function AboutPage () {
             </li>
             <li className="flex gap-3">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              Local roots, global perspective — Nairobi builders connected to the wider Cursor ecosystem.
+              Local roots, global perspective — builders across Kenya connected to the wider Cursor ecosystem.
             </li>
           </ul>
         </FadeIn>
