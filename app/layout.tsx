@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Analytics } from '@vercel/analytics/next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
@@ -53,6 +54,7 @@ export default function RootLayout ({
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} dark h-full`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   )
