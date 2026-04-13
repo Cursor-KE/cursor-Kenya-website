@@ -21,11 +21,6 @@ export const metadata: Metadata = {
   },
   description:
     'Nairobi developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
-  icons: {
-    icon: [{ url: '/opengraph-image.jpg', type: 'image/jpeg' }],
-    shortcut: '/opengraph-image.jpg',
-    apple: '/opengraph-image.jpg',
-  },
   openGraph: {
     title: 'Cursor Kenya',
     description:
