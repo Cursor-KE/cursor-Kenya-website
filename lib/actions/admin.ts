@@ -37,7 +37,7 @@ function sleep (ms: number) {
  * Better Auth hits Postgres — ETIMEDOUT is common when the DB is cold or the pool is busy.
  * One retry after a short delay often succeeds on Neon wake-up.
  */
-async function requireSession () {
+export async function requireSession () {
   const hdrs = await headers()
   let session: Awaited<ReturnType<typeof auth.api.getSession>> = null
   for (let attempt = 0; attempt < 2; attempt++) {
