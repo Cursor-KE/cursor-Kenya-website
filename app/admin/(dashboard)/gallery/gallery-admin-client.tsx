@@ -3,9 +3,9 @@
 import Image from 'next/image'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { deleteImage, deleteVideo, saveImageRecord, saveVideo } from '@/lib/actions/admin'
+import { deleteImage, deleteVideo, saveImageRecord, saveVideo, swapVideoOrder } from '@/lib/actions/admin'
 import { cloudinaryScaledUrl } from '@/lib/cloudinary/delivery-url'
 import { UploadWidget } from '@/components/upload-widget'
 import { Button } from '@/components/ui/button'
@@ -135,7 +135,9 @@ export function GalleryAdminClient ({
 
       <section className="rounded-2xl border border-border bg-card/50 p-6">
         <h2 className="text-lg font-medium text-foreground">YouTube videos</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Paste a video ID (from youtube.com/watch?v=...).</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Paste a video ID (from youtube.com/watch?v=...). Order matches the public gallery — use the arrows beside each row to move it up or down.
+        </p>
         <form onSubmit={addVideo} className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end">
           <div className="flex-1 space-y-2">
             <Label htmlFor="yt">Video ID</Label>
@@ -165,33 +167,73 @@ export function GalleryAdminClient ({
           </Button>
         </form>
         <ul className="mt-6 space-y-2">
-          {videoRows.map((v) => (
+          {videoRows.map((v, i) => (
             <li
               key={v.id}
               className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-background/40 px-3 py-2 text-sm"
             >
-              <span className="truncate text-foreground">
+              <span className="min-w-0 flex-1 truncate text-foreground">
                 {v.title ?? v.youtubeVideoId}{' '}
                 {v.featured ? (
                   <span className="ml-2 rounded-md bg-primary/20 px-1.5 py-0.5 text-xs text-primary">featured</span>
                 ) : null}
               </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={async () => {
-                  try {
-                    await deleteVideo(v.id)
-                    router.refresh()
-                    toast.success('Removed')
-                  } catch (e) {
-                    toast.error(e instanceof Error ? e.message : 'Failed')
-                  }
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex shrink-0 items-center gap-0.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={i === 0}
+                  aria-label="Move video up in the list"
+                  onClick={async () => {
+                    try {
+                      await swapVideoOrder(v.id, 'up')
+                      router.refresh()
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : 'Failed')
+                    }
+                  }}
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={i === videoRows.length - 1}
+                  aria-label="Move video down in the list"
+                  onClick={async () => {
+                    try {
+                      await swapVideoOrder(v.id, 'down')
+                      router.refresh()
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : 'Failed')
+                    }
+                  }}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="Remove video"
+                  onClick={async () => {
+                    try {
+                      await deleteVideo(v.id)
+                      router.refresh()
+                      toast.success('Removed')
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : 'Failed')
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </li>
           ))}
         </ul>

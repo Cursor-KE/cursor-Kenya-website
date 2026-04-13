@@ -1,6 +1,6 @@
 'use server'
 
-import { eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
@@ -158,6 +158,25 @@ export async function saveVideo (input: {
 export async function deleteVideo (id: string) {
   await requireSession()
   await db.delete(videos).where(eq(videos.id, id))
+  revalidatePath('/')
+  revalidatePath('/gallery')
+  revalidatePath('/admin/gallery')
+}
+
+/** Swap sort order with the neighbor above or below (list matches public gallery: highest sortOrder first). */
+export async function swapVideoOrder (id: string, direction: 'up' | 'down') {
+  await requireSession()
+  const all = await db.select().from(videos).orderBy(desc(videos.sortOrder))
+  const idx = all.findIndex((r) => r.id === id)
+  if (idx === -1) return
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+  if (swapIdx < 0 || swapIdx >= all.length) return
+  const a = all[idx]
+  const b = all[swapIdx]
+  const orderA = a.sortOrder
+  const orderB = b.sortOrder
+  await db.update(videos).set({ sortOrder: orderB }).where(eq(videos.id, a.id))
+  await db.update(videos).set({ sortOrder: orderA }).where(eq(videos.id, b.id))
   revalidatePath('/')
   revalidatePath('/gallery')
   revalidatePath('/admin/gallery')
