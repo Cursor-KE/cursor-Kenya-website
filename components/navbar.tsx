@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
@@ -23,6 +24,7 @@ const links = [
 
 export function Navbar () {
   const pathname = usePathname()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/80 bg-background/70 backdrop-blur-xl">
@@ -51,7 +53,7 @@ export function Navbar () {
           ))}
         </nav>
 
-        <Sheet>
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
           <SheetTrigger
             className="md:hidden"
             render={
@@ -69,6 +71,7 @@ export function Navbar () {
                 <Link
                   key={l.href}
                   href={l.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
                 >
                   {l.label}
