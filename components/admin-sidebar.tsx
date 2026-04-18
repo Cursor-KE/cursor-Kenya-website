@@ -5,14 +5,13 @@ import { usePathname } from 'next/navigation'
 import {
   ImageIcon,
   LayoutDashboard,
-  LogOut,
   FileText,
   ListChecks,
   Sparkles,
+  Users,
 } from 'lucide-react'
-import { authClient } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import { AuthSignOutButton } from '@/components/auth-sign-out-button'
 import {
   Sidebar,
   SidebarContent,
@@ -28,16 +27,26 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar'
 
-const items = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/gallery', label: 'Gallery', icon: ImageIcon },
-  { href: '/admin/community-showcase', label: 'Showcase', icon: Sparkles },
-  { href: '/admin/forms', label: 'Forms', icon: FileText },
-  { href: '/admin/responses', label: 'Responses', icon: ListChecks },
-]
-
-export function AdminChrome ({ children }: { children: React.ReactNode }) {
+export function AdminChrome ({
+  children,
+  currentUserRole,
+  pendingAdminCount,
+}: {
+  children: React.ReactNode
+  currentUserRole: 'super_user' | 'admin'
+  pendingAdminCount: number
+}) {
   const pathname = usePathname()
+  const items = [
+    { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/gallery', label: 'Gallery', icon: ImageIcon },
+    { href: '/admin/community-showcase', label: 'Showcase', icon: Sparkles },
+    { href: '/admin/forms', label: 'Forms', icon: FileText },
+    { href: '/admin/responses', label: 'Responses', icon: ListChecks },
+    ...(currentUserRole === 'super_user'
+      ? [{ href: '/admin/users', label: 'Admin Users', icon: Users }]
+      : []),
+  ]
 
   return (
     <SidebarProvider>
@@ -65,6 +74,11 @@ export function AdminChrome ({ children }: { children: React.ReactNode }) {
                         <Link href={item.href} className="flex items-center gap-2">
                           <item.icon className="h-4 w-4" />
                           <span>{item.label}</span>
+                          {item.href === '/admin/users' && pendingAdminCount > 0 ? (
+                            <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
+                              {pendingAdminCount}
+                            </span>
+                          ) : null}
                         </Link>
                       }
                     />
@@ -75,17 +89,7 @@ export function AdminChrome ({ children }: { children: React.ReactNode }) {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter className="border-t border-sidebar-border p-2">
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-muted-foreground"
-            onClick={async () => {
-              await authClient.signOut()
-              window.location.href = '/admin/login'
-            }}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign out
-          </Button>
+          <AuthSignOutButton className="w-full justify-start text-muted-foreground" />
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="bg-background">
