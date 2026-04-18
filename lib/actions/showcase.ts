@@ -3,32 +3,22 @@
 import { desc, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { revalidatePath } from 'next/cache'
-import { requireSession } from '@/lib/actions/admin'
+import { requireSession } from '@/lib/auth/session'
 import { db } from '@/db'
 import { communityShowcase } from '@/db/schema'
-
-const MAX_TITLE = 200
-const MAX_DESC = 8000
-const MAX_URL = 2048
-
-function isHttpsUrl (raw: string) {
-  try {
-    const u = new URL(raw.trim())
-    return u.protocol === 'https:' || u.protocol === 'http:'
-  } catch {
-    return false
-  }
-}
-
-function isScreenshotUrl (raw: string) {
-  if (!isHttpsUrl(raw)) return false
-  try {
-    const u = new URL(raw.trim())
-    return u.protocol === 'https:'
-  } catch {
-    return false
-  }
-}
+import {
+  SHOWCASE_DESC_MAX,
+  SHOWCASE_DESC_MIN,
+  SHOWCASE_DESC_MIN_WORDS,
+  SHOWCASE_NAME_MAX,
+  SHOWCASE_NAME_MIN,
+  SHOWCASE_SCREENSHOT_MAX,
+  SHOWCASE_SCREENSHOT_MIN,
+  SHOWCASE_TITLE_MAX,
+  SHOWCASE_TITLE_MIN,
+  getBlockingValidationIssues,
+  getShowcaseValidationSignals,
+} from '@/lib/showcase/validation'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -52,35 +42,49 @@ export async function submitCommunityShowcase (input: {
   const builderName = input.builderName.trim()
   const builderEmail = input.builderEmail.trim().toLowerCase()
   const screenshotUrls = input.screenshotUrls.map((u) => u.trim()).filter(Boolean)
+  const signals = getShowcaseValidationSignals({
+    title,
+    description,
+    projectUrl,
+    repoUrl,
+    builderName,
+    screenshotUrls,
+  })
 
-  if (!title || title.length > MAX_TITLE) {
-    return { ok: false, message: 'Title is required (max 200 characters).' }
+  if (!signals.titleLengthOk) {
+    return { ok: false, message: `Title must be ${SHOWCASE_TITLE_MIN}-${SHOWCASE_TITLE_MAX} characters.` }
   }
-  if (!description || description.length > MAX_DESC) {
-    return { ok: false, message: 'Description is required.' }
+  if (!signals.descriptionLengthOk) {
+    return { ok: false, message: `Description must be ${SHOWCASE_DESC_MIN}-${SHOWCASE_DESC_MAX} characters.` }
   }
-  if (!projectUrl || !isHttpsUrl(projectUrl) || projectUrl.length > MAX_URL) {
+  if (!signals.descriptionWordCountOk) {
+    return { ok: false, message: `Description must include at least ${SHOWCASE_DESC_MIN_WORDS} words.` }
+  }
+  if (!signals.projectUrlOk) {
     return { ok: false, message: 'Enter a valid http(s) project or demo URL.' }
   }
-  if (repoUrl && (!isHttpsUrl(repoUrl) || repoUrl.length > MAX_URL)) {
+  if (!signals.repoUrlOk) {
     return { ok: false, message: 'Repository URL must be a valid http(s) link.' }
   }
-  if (!builderName || builderName.length > 120) {
-    return { ok: false, message: 'Your name is required.' }
+  if (!signals.builderNameLengthOk) {
+    return { ok: false, message: `Your name must be ${SHOWCASE_NAME_MIN}-${SHOWCASE_NAME_MAX} characters.` }
   }
   if (!builderEmail || !EMAIL_RE.test(builderEmail) || builderEmail.length > 254) {
     return { ok: false, message: 'Enter a valid email address.' }
   }
-  if (screenshotUrls.length < 2) {
-    return { ok: false, message: 'Add at least two product screenshots.' }
-  }
-  if (screenshotUrls.length > 8) {
-    return { ok: false, message: 'Maximum eight screenshots.' }
-  }
-  for (const u of screenshotUrls) {
-    if (!isScreenshotUrl(u) || u.length > MAX_URL) {
-      return { ok: false, message: 'Each screenshot must be a valid https URL.' }
+  if (!signals.screenshotCountOk) {
+    return {
+      ok: false,
+      message: `Add ${SHOWCASE_SCREENSHOT_MIN}-${SHOWCASE_SCREENSHOT_MAX} valid https screenshots.`,
     }
+  }
+  if (signals.duplicateScreenshots) {
+    return { ok: false, message: 'Screenshot URLs must be unique.' }
+  }
+
+  const validationIssues = getBlockingValidationIssues(signals)
+  if (validationIssues.length > 0) {
+    return { ok: false, message: validationIssues[0] }
   }
 
   try {

@@ -1,8 +1,9 @@
 import 'server-only'
 
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db'
-import { communityShowcase, images, videos } from '@/db/schema'
+import { communityShowcase, images, showcaseAiActions, showcaseAiReviews, videos } from '@/db/schema'
+import type { ShowcaseSavedReview } from '@/lib/ai/showcase-review-schema'
 import { listCursorKenyaImages } from '@/lib/cloudinary/list-folder-images'
 import type { HomeGalleryPhoto } from '@/lib/gallery/types'
 
@@ -49,6 +50,58 @@ export async function getAllCommunityShowcaseForAdmin () {
     .select()
     .from(communityShowcase)
     .orderBy(desc(communityShowcase.sortOrder), desc(communityShowcase.createdAt))
+}
+
+export async function getLatestShowcaseAiReviewsForAdmin (): Promise<Record<string, ShowcaseSavedReview>> {
+  const reviewRows = await db
+    .selectDistinctOn([showcaseAiReviews.showcaseId])
+    .from(showcaseAiReviews)
+    .orderBy(showcaseAiReviews.showcaseId, desc(showcaseAiReviews.createdAt))
+
+  if (reviewRows.length === 0) {
+    return {}
+  }
+
+  const reviewIds = reviewRows.map((row) => row.id)
+  const actionRows = await db
+    .selectDistinctOn([showcaseAiActions.reviewId])
+    .from(showcaseAiActions)
+    .where(inArray(showcaseAiActions.reviewId, reviewIds))
+    .orderBy(showcaseAiActions.reviewId, desc(showcaseAiActions.executedAt))
+
+  const latestActionByReview = new Map<string, typeof showcaseAiActions.$inferSelect>(
+    actionRows.map((row) => [row.reviewId, row])
+  )
+
+  return Object.fromEntries(
+    reviewRows.map((row) => {
+      const action = latestActionByReview.get(row.id) ?? null
+      return [
+        row.showcaseId,
+        {
+          showcaseId: row.showcaseId,
+          reviewId: row.id,
+          model: row.model,
+          createdAt: row.createdAt.toISOString(),
+          statusAtReview: row.statusAtReview,
+          validationSignals: row.validationSignals,
+          policyOutcome: row.policyOutcome,
+          review: row.reviewJson,
+          autoAction: action
+            ? {
+                id: action.id,
+                action: action.action,
+                success: action.success,
+                executedAt: action.executedAt.toISOString(),
+                failureReason: action.failureReason,
+                preActionStatus: action.preActionStatus,
+                postActionStatus: action.postActionStatus,
+              }
+            : null,
+        } satisfies ShowcaseSavedReview,
+      ]
+    })
+  )
 }
 
 /** Curated gallery rows first; otherwise images listed from the Cloudinary folder (`CLOUDINARY_UPLOAD_PREFIX` or `cursor-kenya`). */

@@ -15,6 +15,13 @@
       "when": 1776099879502,
       "tag": "0001_community_showcase",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776517200000,
+      "tag": "0002_showcase_ai_reviews",
+      "breakpoints": true
     }
   ]
 }

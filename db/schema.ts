@@ -196,3 +196,95 @@ export const communityShowcase = pgTable(
     index('community_showcase_featured_sort_idx').on(t.featured, t.sortOrder),
   ]
 )
+
+export type ShowcaseValidationSignals = {
+  titleLengthOk: boolean
+  descriptionLengthOk: boolean
+  descriptionWordCountOk: boolean
+  builderNameLengthOk: boolean
+  projectUrlOk: boolean
+  repoUrlOk: boolean
+  screenshotCountOk: boolean
+  duplicateScreenshots: boolean
+}
+
+export type ShowcaseReviewPolicyOutcome = {
+  decisionMode: 'manual_review' | 'auto_approved'
+  autoAction: 'approve_and_feature' | null
+  reasons: string[]
+}
+
+export type ShowcaseAiReviewPayload = {
+  summary: string
+  qualityScore: number
+  recommendation: 'approve' | 'reject' | 'needs_manual_review'
+  featuredSuggestion: {
+    shouldFeature: boolean
+    reason: string
+  }
+  riskFlags: string[]
+  moderationNotes: string
+}
+
+export const showcaseAiReviews = pgTable(
+  'showcase_ai_reviews',
+  {
+    id: text('id').primaryKey(),
+    showcaseId: text('showcase_id')
+      .notNull()
+      .references(() => communityShowcase.id, { onDelete: 'cascade' }),
+    statusAtReview: showcaseStatusEnum('status_at_review').notNull(),
+    promptVersion: text('prompt_version').notNull(),
+    model: text('model').notNull(),
+    validationSignals: jsonb('validation_signals').notNull().$type<ShowcaseValidationSignals>(),
+    reviewJson: jsonb('review_json').notNull().$type<ShowcaseAiReviewPayload>(),
+    policyOutcome: jsonb('policy_outcome').notNull().$type<ShowcaseReviewPolicyOutcome>(),
+    createdByUserId: text('created_by_user_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('showcase_ai_reviews_showcase_id_idx').on(t.showcaseId),
+    index('showcase_ai_reviews_created_at_idx').on(t.createdAt),
+  ]
+)
+
+export type ShowcaseAiActionPayload = {
+  id: string
+  showcaseId: string
+  reviewId: string
+  action: 'approve_and_feature'
+  actionSource: 'ai_auto_action'
+  policySnapshot: ShowcaseReviewPolicyOutcome
+  executedByUserId: string | null
+  executedAt: Date
+  success: boolean
+  failureReason: string | null
+  preActionStatus: 'pending' | 'approved' | 'rejected'
+  postActionStatus: 'pending' | 'approved' | 'rejected' | null
+}
+
+export const showcaseAiActions = pgTable(
+  'showcase_ai_actions',
+  {
+    id: text('id').primaryKey(),
+    showcaseId: text('showcase_id')
+      .notNull()
+      .references(() => communityShowcase.id, { onDelete: 'cascade' }),
+    reviewId: text('review_id')
+      .notNull()
+      .references(() => showcaseAiReviews.id, { onDelete: 'cascade' }),
+    action: text('action').notNull().$type<'approve_and_feature'>(),
+    actionSource: text('action_source').notNull().$type<'ai_auto_action'>(),
+    policySnapshot: jsonb('policy_snapshot').notNull().$type<ShowcaseReviewPolicyOutcome>(),
+    executedByUserId: text('executed_by_user_id'),
+    executedAt: timestamp('executed_at', { withTimezone: true }).defaultNow().notNull(),
+    success: boolean('success').notNull(),
+    failureReason: text('failure_reason'),
+    preActionStatus: showcaseStatusEnum('pre_action_status').notNull(),
+    postActionStatus: showcaseStatusEnum('post_action_status'),
+  },
+  (t) => [
+    index('showcase_ai_actions_showcase_id_idx').on(t.showcaseId),
+    index('showcase_ai_actions_review_id_idx').on(t.reviewId),
+  ]
+)
