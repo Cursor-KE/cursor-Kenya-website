@@ -3,7 +3,7 @@
 import { desc, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { revalidatePath } from 'next/cache'
-import { requireSession } from '@/lib/auth/session'
+import { requireApprovedAdmin } from '@/lib/auth/session'
 import { db } from '@/db'
 import { communityShowcase } from '@/db/schema'
 import {
@@ -124,7 +124,7 @@ export async function updateShowcaseStatus (
   id: string,
   status: 'pending' | 'approved' | 'rejected'
 ) {
-  await requireSession()
+  await requireApprovedAdmin()
   const patch =
     status === 'approved'
       ? { status }
@@ -134,7 +134,7 @@ export async function updateShowcaseStatus (
 }
 
 export async function toggleShowcaseFeatured (id: string) {
-  await requireSession()
+  await requireApprovedAdmin()
   const rows = await db.select().from(communityShowcase).where(eq(communityShowcase.id, id)).limit(1)
   const row = rows[0]
   if (!row || row.status !== 'approved') return
@@ -146,7 +146,7 @@ export async function toggleShowcaseFeatured (id: string) {
 }
 
 export async function swapShowcaseOrder (id: string, direction: 'up' | 'down') {
-  await requireSession()
+  await requireApprovedAdmin()
   const all = await db.select().from(communityShowcase).orderBy(desc(communityShowcase.sortOrder))
   const idx = all.findIndex((r) => r.id === id)
   if (idx === -1) return
@@ -162,7 +162,7 @@ export async function swapShowcaseOrder (id: string, direction: 'up' | 'down') {
 }
 
 export async function deleteShowcase (id: string) {
-  await requireSession()
+  await requireApprovedAdmin()
   await db.delete(communityShowcase).where(eq(communityShowcase.id, id))
   revalidateShowcase()
 }

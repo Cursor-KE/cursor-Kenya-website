@@ -25,7 +25,7 @@ import {
 } from '@/lib/ai/showcase-review-handler'
 import { evaluateShowcasePolicy } from '@/lib/ai/showcase-policy'
 import type { ShowcaseSavedReview } from '@/lib/ai/showcase-review-schema'
-import { requireSession } from '@/lib/auth/session'
+import { requireApprovedAdmin } from '@/lib/auth/session'
 import { getShowcaseValidationSignals, type ShowcaseValidationSignals } from '@/lib/showcase/validation'
 
 export async function getShowcaseSubmissionById (id: string) {
@@ -236,7 +236,7 @@ export async function runBatchShowcaseReview (input: {
 
 export function createShowcaseReviewDeps (): ShowcaseReviewDeps {
   return {
-    requireSession,
+    requireSession: requireApprovedAdmin,
     runSingleReview: runSingleShowcaseReview,
     runBatchReview: runBatchShowcaseReview,
   }

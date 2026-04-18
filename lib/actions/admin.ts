@@ -7,7 +7,12 @@ import { db } from '@/db'
 import { forms, images, videos } from '@/db/schema'
 import type { FormDefinition } from '@/lib/forms/types'
 import { destroyCloudinaryImageByPublicId } from '@/lib/cloudinary/destroy-image'
-import { requireSession, SESSION_DB_UNAVAILABLE, SESSION_UNAUTHORIZED } from '@/lib/auth/session'
+import {
+  requireApprovedAdmin,
+  SESSION_DB_UNAVAILABLE,
+  SESSION_UNAUTHORIZED,
+  ADMIN_APPROVAL_REQUIRED,
+} from '@/lib/auth/session'
 
 export type SaveImageRecordResult =
   | { ok: true; id: string }
@@ -21,7 +26,7 @@ export async function saveImageRecord (input: {
   height?: number
 }): Promise<SaveImageRecordResult> {
   try {
-    await requireSession()
+    await requireApprovedAdmin()
   } catch (e) {
     if (e instanceof Error && e.message === SESSION_DB_UNAVAILABLE) {
       return {
@@ -35,6 +40,13 @@ export async function saveImageRecord (input: {
         ok: false,
         message:
           'Not signed in. Open /admin/login in this browser, sign in, then upload again.',
+      }
+    }
+    if (e instanceof Error && e.message === ADMIN_APPROVAL_REQUIRED) {
+      return {
+        ok: false,
+        message:
+          'Your admin account is still waiting for approval from the super user.',
       }
     }
     throw e
@@ -67,7 +79,7 @@ export async function saveImageRecord (input: {
 }
 
 export async function deleteImage (id: string) {
-  await requireSession()
+  await requireApprovedAdmin()
   const rows = await db.select().from(images).where(eq(images.id, id)).limit(1)
   const row = rows[0]
   if (!row) return
@@ -89,7 +101,7 @@ export async function saveVideo (input: {
   description?: string
   featured?: boolean
 }) {
-  await requireSession()
+  await requireApprovedAdmin()
   await db.insert(videos).values({
     id: nanoid(),
     youtubeVideoId: input.youtubeVideoId,
@@ -104,7 +116,7 @@ export async function saveVideo (input: {
 }
 
 export async function deleteVideo (id: string) {
-  await requireSession()
+  await requireApprovedAdmin()
   await db.delete(videos).where(eq(videos.id, id))
   revalidatePath('/')
   revalidatePath('/gallery')
@@ -113,7 +125,7 @@ export async function deleteVideo (id: string) {
 
 /** Swap sort order with the neighbor above or below (list matches public gallery: highest sortOrder first). */
 export async function swapVideoOrder (id: string, direction: 'up' | 'down') {
-  await requireSession()
+  await requireApprovedAdmin()
   const all = await db.select().from(videos).orderBy(desc(videos.sortOrder))
   const idx = all.findIndex((r) => r.id === id)
   if (idx === -1) return
@@ -137,7 +149,7 @@ export async function saveForm (input: {
   status: 'draft' | 'published'
   definition: FormDefinition
 }) {
-  await requireSession()
+  await requireApprovedAdmin()
   if (input.id) {
     await db
       .update(forms)
@@ -165,7 +177,7 @@ export async function saveForm (input: {
 }
 
 export async function deleteForm (id: string) {
-  await requireSession()
+  await requireApprovedAdmin()
   await db.delete(forms).where(eq(forms.id, id))
   revalidatePath('/admin/forms')
 }
