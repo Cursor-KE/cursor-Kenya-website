@@ -1,6 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary'
 import { NextResponse } from 'next/server'
-import { getCloudinaryUploadFolder } from '@/lib/cloudinary/folder'
+import { getCloudinaryUploadFolder, type CloudinaryUploadKind } from '@/lib/cloudinary/folder'
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -8,7 +8,11 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 
-export async function POST () {
+function parseKind (value: unknown): CloudinaryUploadKind {
+  return value === 'showcase' ? 'showcase' : 'gallery'
+}
+
+export async function POST (request: Request) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME
   const apiKey = process.env.CLOUDINARY_API_KEY
   const apiSecret = process.env.CLOUDINARY_API_SECRET
@@ -16,7 +20,20 @@ export async function POST () {
     return NextResponse.json({ error: 'Cloudinary is not configured' }, { status: 503 })
   }
 
-  const folder = getCloudinaryUploadFolder()
+  let kind: CloudinaryUploadKind = 'gallery'
+  try {
+    if (request.headers.get('content-type')?.includes('application/json')) {
+      const body = await request.json() as { kind?: unknown }
+      kind = parseKind(body?.kind)
+    } else {
+      const url = new URL(request.url)
+      kind = parseKind(url.searchParams.get('kind'))
+    }
+  } catch {
+    kind = 'gallery'
+  }
+
+  const folder = getCloudinaryUploadFolder(kind)
   const timestamp = Math.round(Date.now() / 1000)
   const signature = cloudinary.utils.api_sign_request(
     { timestamp, folder },
@@ -29,5 +46,6 @@ export async function POST () {
     timestamp,
     signature,
     folder,
+    kind,
   })
 }
