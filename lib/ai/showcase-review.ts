@@ -4,6 +4,7 @@ import {
   showcaseReviewResultSchema,
   type ShowcaseReviewResult,
 } from '@/lib/ai/showcase-review-schema'
+import type { ShowcaseValidationSignals } from '@/lib/showcase/validation'
 
 export type ShowcaseReviewSubmission = Pick<
   typeof communityShowcase.$inferSelect,
@@ -21,6 +22,7 @@ export type ShowcaseReviewSubmission = Pick<
 >
 
 const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini'
+export const SHOWCASE_REVIEW_PROMPT_VERSION = 'showcase-review-v3'
 
 export class ShowcaseReviewConfigError extends Error {}
 export class ShowcaseReviewOutputError extends Error {}
@@ -34,14 +36,19 @@ export function getShowcaseReviewModel () {
   return process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL
 }
 
-export function buildShowcaseReviewPrompt (submission: ShowcaseReviewSubmission) {
+export function buildShowcaseReviewPrompt (
+  submission: ShowcaseReviewSubmission,
+  validationSignals?: ShowcaseValidationSignals
+) {
   return [
     'You are reviewing a community showcase submission for an internal admin team.',
     'Judge only from the submission data below.',
     'Do not browse links, infer hidden product quality, or invent missing facts.',
     'If evidence is limited or mixed, use needs_manual_review.',
     'Optimize for staff moderation notes, not applicant-facing language.',
+    'Treat the validation signals as objective checks and keep them separate from subjective judgment.',
     '',
+    `Prompt version: ${SHOWCASE_REVIEW_PROMPT_VERSION}`,
     `Submission ID: ${submission.id}`,
     `Current status: ${submission.status}`,
     `Currently featured: ${submission.featured ? 'yes' : 'no'}`,
@@ -54,6 +61,11 @@ export function buildShowcaseReviewPrompt (submission: ShowcaseReviewSubmission)
     `Screenshot count: ${submission.screenshotUrls.length}`,
     'Screenshots:',
     ...submission.screenshotUrls.map((url, index) => `- [${index + 1}] ${url}`),
+    '',
+    'Validation signals:',
+    validationSignals
+      ? JSON.stringify(validationSignals, null, 2)
+      : 'No validation signals were provided.',
     '',
     'Description:',
     submission.description,
@@ -95,7 +107,8 @@ export function extractStructuredOutputText (payload: OpenAIResponsesApiPayload)
 }
 
 export async function reviewShowcaseSubmission (
-  submission: ShowcaseReviewSubmission
+  submission: ShowcaseReviewSubmission,
+  validationSignals?: ShowcaseValidationSignals
 ): Promise<ShowcaseReviewResult> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
@@ -126,7 +139,7 @@ export async function reviewShowcaseSubmission (
           content: [
             {
               type: 'input_text',
-              text: buildShowcaseReviewPrompt(submission),
+              text: buildShowcaseReviewPrompt(submission, validationSignals),
             },
           ],
         },

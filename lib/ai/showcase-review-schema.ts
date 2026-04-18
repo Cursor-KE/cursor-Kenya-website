@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { ShowcaseReviewPolicyOutcome, ShowcaseValidationSignals } from '@/db/schema'
 
 export const showcaseReviewResultSchema = z.object({
   summary: z.string().trim().min(1).max(500),
@@ -13,6 +14,43 @@ export const showcaseReviewResultSchema = z.object({
 }).strict()
 
 export type ShowcaseReviewResult = z.infer<typeof showcaseReviewResultSchema>
+
+export const showcaseValidationSignalsSchema = z.object({
+  titleLengthOk: z.boolean(),
+  descriptionLengthOk: z.boolean(),
+  descriptionWordCountOk: z.boolean(),
+  builderNameLengthOk: z.boolean(),
+  projectUrlOk: z.boolean(),
+  repoUrlOk: z.boolean(),
+  screenshotCountOk: z.boolean(),
+  duplicateScreenshots: z.boolean(),
+}).strict()
+
+export const showcaseReviewPolicyOutcomeSchema = z.object({
+  decisionMode: z.enum(['manual_review', 'auto_approved']),
+  autoAction: z.enum(['approve']).nullable(),
+  reasons: z.array(z.string().trim().min(1).max(200)).max(8),
+}).strict()
+
+export type ShowcaseSavedReview = {
+  showcaseId: string
+  reviewId: string
+  model: string
+  createdAt: string
+  statusAtReview: 'pending' | 'approved' | 'rejected'
+  validationSignals: ShowcaseValidationSignals
+  policyOutcome: ShowcaseReviewPolicyOutcome
+  review: ShowcaseReviewResult
+  autoAction?: {
+    id: string
+    action: 'approve'
+    success: boolean
+    executedAt: string
+    failureReason: string | null
+    preActionStatus: 'pending' | 'approved' | 'rejected'
+    postActionStatus: 'pending' | 'approved' | 'rejected' | null
+  } | null
+}
 
 export const showcaseReviewJsonSchema = {
   type: 'object',

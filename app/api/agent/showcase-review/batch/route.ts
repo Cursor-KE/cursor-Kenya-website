@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import {
   createShowcaseReviewDeps,
-  handleShowcaseReviewRequest,
+  handleShowcaseBatchReviewRequest,
 } from '@/lib/ai/showcase-review-service'
 
 export async function POST (req: Request) {
@@ -13,12 +13,12 @@ export async function POST (req: Request) {
   }
 
   try {
-    const result = await handleShowcaseReviewRequest(body, createShowcaseReviewDeps())
+    const result = await handleShowcaseBatchReviewRequest(body, createShowcaseReviewDeps())
     return NextResponse.json(result.body, { status: result.status })
   } catch (error) {
-    console.error('[showcase-review]', error)
+    console.error('[showcase-review-batch]', error)
     return NextResponse.json(
-      { error: 'Could not complete the showcase review right now.' },
+      { error: 'Could not complete the batch showcase review right now.' },
       { status: 500 }
     )
   }
