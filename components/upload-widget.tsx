@@ -5,8 +5,6 @@ import { ImagePlus, Trash2, Upload, X } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 
@@ -31,6 +29,8 @@ type StagedItem = {
 }
 
 const UPLOAD_TOAST = 'gallery-upload'
+const UPLOAD_RESULT_TOAST_DURATION = 5000
+const UPLOAD_WARNING_TOAST_DURATION = 8000
 
 const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)$/i
 
@@ -230,10 +230,14 @@ export function UploadWidget ({ onUploaded, onBatchComplete, className }: Upload
       if (ok > 0 && failed === 0) {
         toast.success(ok === 1 ? 'Image saved to gallery' : `${ok} images saved to gallery`, {
           id: UPLOAD_TOAST,
+          duration: UPLOAD_RESULT_TOAST_DURATION,
+          dismissible: true,
         })
       } else if (ok > 0 && failed > 0) {
         toast.warning(`${ok} saved, ${failed} failed`, {
           id: UPLOAD_TOAST,
+          duration: UPLOAD_WARNING_TOAST_DURATION,
+          dismissible: true,
           description: lastError ?? undefined,
         })
       } else if (failed > 0) {
