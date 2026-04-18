@@ -3,7 +3,7 @@
 import { desc, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { revalidatePath } from 'next/cache'
-import { requireSession } from '@/lib/actions/admin'
+import { requireSession } from '@/lib/auth/session'
 import { db } from '@/db'
 import { communityShowcase } from '@/db/schema'
 

@@ -15,7 +15,12 @@ export default async function AdminCommunityShowcasePage () {
       <p className="mt-1 text-sm text-muted-foreground">
         Review submissions, approve or reject, feature approved projects, and set display order.
       </p>
-      <ShowcaseAdminClient rows={rows} />
+      {!process.env.OPENAI_API_KEY ? (
+        <p className="mt-3 rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          AI reviews are unavailable until `OPENAI_API_KEY` is configured on the server.
+        </p>
+      ) : null}
+      <ShowcaseAdminClient rows={rows} aiEnabled={Boolean(process.env.OPENAI_API_KEY)} />
     </div>
   )
 }

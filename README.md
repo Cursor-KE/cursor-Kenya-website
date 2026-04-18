@@ -56,6 +56,8 @@ Use **`pnpm db:probe`** to verify connectivity and pooler/SSL behavior without s
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | For gallery/admin uploads | Cloudinary API credentials. |
 | `CLOUDINARY_UPLOAD_PREFIX` | Optional | Upload folder prefix ([`lib/cloudinary/folder.ts`](lib/cloudinary/folder.ts)). |
 | `LUMA_API_KEY` | Optional | Enables event listings from Luma; without it, events UI degrades gracefully. |
+| `OPENAI_API_KEY` | For admin AI reviews | Enables the showcase `Review with AI` action in admin. |
+| `OPENAI_MODEL` | Optional | Overrides the default OpenAI model used for showcase reviews (`gpt-4o-mini`). |
 
 **Optional tuning (Neon, SSL, connectivity):** `DATABASE_SSL_STRICT`, `DATABASE_PG_IPV4`, `DATABASE_CONNECT_TIMEOUT` / `PGCONNECT_TIMEOUT`, `DATABASE_PG_MAX`, `DATABASE_CONNECT_TIMEOUT_MS` (migrate script)—see [`drizzle.config.ts`](drizzle.config.ts), [`lib/db/postgres.ts`](lib/db/postgres.ts), and [`scripts/migrate.cjs`](scripts/migrate.cjs).
 

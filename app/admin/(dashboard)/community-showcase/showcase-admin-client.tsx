@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronUp, Sparkles, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   deleteShowcase,
@@ -11,17 +11,42 @@ import {
   toggleShowcaseFeatured,
   updateShowcaseStatus,
 } from '@/lib/actions/showcase'
+import type { ShowcaseReviewResult } from '@/lib/ai/showcase-review-schema'
 import { cloudinaryScaledUrl } from '@/lib/cloudinary/delivery-url'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { communityShowcase } from '@/db/schema'
 
 type Row = typeof communityShowcase.$inferSelect
 
-export function ShowcaseAdminClient ({ rows }: { rows: Row[] }) {
+function recommendationVariant (
+  recommendation: ShowcaseReviewResult['recommendation']
+): 'default' | 'secondary' | 'destructive' {
+  if (recommendation === 'approve') return 'default'
+  if (recommendation === 'reject') return 'destructive'
+  return 'secondary'
+}
+
+export function ShowcaseAdminClient ({
+  rows,
+  aiEnabled,
+}: {
+  rows: Row[]
+  aiEnabled: boolean
+}) {
   const router = useRouter()
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [reviewingId, setReviewingId] = useState<string | null>(null)
+  const [reviews, setReviews] = useState<Record<string, ShowcaseReviewResult>>({})
+  const [reviewErrors, setReviewErrors] = useState<Record<string, string>>({})
 
   async function run (id: string, fn: () => Promise<void>) {
     setBusyId(id)
@@ -32,6 +57,37 @@ export function ShowcaseAdminClient ({ rows }: { rows: Row[] }) {
       toast.error(e instanceof Error ? e.message : 'Failed')
     } finally {
       setBusyId(null)
+    }
+  }
+
+  async function reviewWithAi (id: string) {
+    setReviewingId(id)
+    setReviewErrors((current) => {
+      const next = { ...current }
+      delete next[id]
+      return next
+    })
+
+    try {
+      const res = await fetch('/api/agent/showcase-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showcaseId: id }),
+      })
+      const payload = await res.json() as { error?: string; review?: ShowcaseReviewResult }
+      if (!res.ok || !payload.review) {
+        throw new Error(payload.error || 'Failed to review this submission.')
+      }
+      setReviews((current) => ({
+        ...current,
+        [id]: payload.review as ShowcaseReviewResult,
+      }))
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Failed to review this submission.'
+      setReviewErrors((current) => ({ ...current, [id]: message }))
+      toast.error(message)
+    } finally {
+      setReviewingId(null)
     }
   }
 
@@ -78,6 +134,15 @@ export function ShowcaseAdminClient ({ rows }: { rows: Row[] }) {
                 {row.builderName} · {row.builderEmail}
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!aiEnabled || reviewingId !== null}
+                  onClick={() => reviewWithAi(row.id)}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {reviewingId === row.id ? 'Reviewing…' : reviews[row.id] ? 'Review again' : 'Review with AI'}
+                </Button>
                 {row.status === 'pending' ? (
                   <>
                     <Button
@@ -154,6 +219,61 @@ export function ShowcaseAdminClient ({ rows }: { rows: Row[] }) {
                   </Button>
                 ) : null}
               </div>
+              {reviewErrors[row.id] ? (
+                <div className="flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>{reviewErrors[row.id]}</p>
+                </div>
+              ) : null}
+              {reviews[row.id] ? (
+                <Card size="sm" className="border border-border/80 bg-background/70">
+                  <CardHeader className="gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <CardTitle>AI review</CardTitle>
+                      <Badge variant={recommendationVariant(reviews[row.id].recommendation)}>
+                        {reviews[row.id].recommendation.replaceAll('_', ' ')}
+                      </Badge>
+                      <Badge variant="outline">Quality {reviews[row.id].qualityScore}/10</Badge>
+                      {reviews[row.id].featuredSuggestion.shouldFeature ? (
+                        <Badge variant="secondary">Suggested feature</Badge>
+                      ) : null}
+                    </div>
+                    <CardDescription>{reviews[row.id].summary}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="rounded-lg border border-border/70 bg-muted/30 px-3 py-2">
+                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                        Staff notes
+                      </p>
+                      <p className="mt-1 text-sm text-foreground/90">{reviews[row.id].moderationNotes}</p>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                        <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                          Feature suggestion
+                        </p>
+                        <p className="mt-1 text-sm text-foreground/90">
+                          {reviews[row.id].featuredSuggestion.reason}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                        <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                          Risk flags
+                        </p>
+                        {reviews[row.id].riskFlags.length === 0 ? (
+                          <p className="mt-1 text-sm text-foreground/90">No obvious flags from the submitted data.</p>
+                        ) : (
+                          <ul className="mt-1 space-y-1 text-sm text-foreground/90">
+                            {reviews[row.id].riskFlags.map((flag) => (
+                              <li key={flag}>• {flag}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
               {row.status === 'approved' ? (
                 <div className="flex items-center gap-2 pt-2">
                   <Switch

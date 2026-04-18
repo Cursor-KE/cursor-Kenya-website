@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --import ./tests/register-aliases.mjs --test --experimental-strip-types tests/**/*.test.mts",
     "db:generate": "drizzle-kit generate",
     "db:probe": "node scripts/db-probe.cjs",
     "db:migrate": "node scripts/migrate.cjs",
