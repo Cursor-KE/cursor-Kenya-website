@@ -182,6 +182,7 @@ export function CommunityShowcaseForm () {
         ) : null}
         {shots.length < 8 ? (
           <UploadWidget
+            kind="showcase"
             onUploaded={onUploaded}
             onBatchComplete={() => router.refresh()}
           />

@@ -1,9 +1,12 @@
-import { desc, sql } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
-import { formResponses, forms, images, videos } from '@/db/schema'
+import { formResponses, forms, images, user, videos } from '@/db/schema'
+import { requireApprovedAdmin } from '@/lib/auth/session'
 
 export default async function AdminDashboardPage () {
-  const [statsRows, recent] = await Promise.all([
+  const currentUser = await requireApprovedAdmin()
+
+  const [statsRows, recent, pendingAdminRows] = await Promise.all([
     db.execute(sql`
       SELECT
         (SELECT COUNT(*)::int FROM ${images}) AS img_c,
@@ -16,6 +19,12 @@ export default async function AdminDashboardPage () {
       .from(formResponses)
       .orderBy(desc(formResponses.createdAt))
       .limit(5),
+    currentUser.user.role === 'super_user'
+      ? db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(user)
+          .where(eq(user.adminStatus, 'pending'))
+      : Promise.resolve([{ count: 0 }]),
   ])
 
   const stats = statsRows[0] as {
@@ -25,10 +34,14 @@ export default async function AdminDashboardPage () {
     resp_c: number
   }
 
+  const pendingAdminCount = pendingAdminRows[0]?.count ?? 0
+
   return (
     <div className="p-6 lg:p-10">
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">Dashboard</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Overview of content and recent submissions.</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Overview of content, submissions, and admin access requests.
+      </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
@@ -46,6 +59,18 @@ export default async function AdminDashboardPage () {
           </div>
         ))}
       </div>
+
+      {currentUser.user.role === 'super_user' ? (
+        <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+          <p className="text-sm font-medium text-foreground">Admin approvals</p>
+          <p className="mt-2 text-3xl font-semibold tabular-nums text-foreground">
+            {pendingAdminCount}
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Pending admin signup{pendingAdminCount === 1 ? '' : 's'} waiting for your review.
+          </p>
+        </div>
+      ) : null}
 
       <div className="mt-10 rounded-2xl border border-border bg-card/40 p-6">
         <h2 className="text-lg font-medium text-foreground">Recent responses</h2>

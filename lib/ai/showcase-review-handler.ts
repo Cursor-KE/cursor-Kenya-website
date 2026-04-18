@@ -3,6 +3,8 @@ import { ShowcaseReviewConfigError, ShowcaseReviewOutputError } from '@/lib/ai/s
 
 export const SESSION_DB_UNAVAILABLE = 'SESSION_DB_UNAVAILABLE'
 export const SESSION_UNAUTHORIZED = 'SESSION_UNAUTHORIZED'
+export const ADMIN_APPROVAL_REQUIRED = 'ADMIN_APPROVAL_REQUIRED'
+export const ADMIN_FORBIDDEN = 'ADMIN_FORBIDDEN'
 
 type ShowcaseReviewSuccess = {
   status: number
@@ -53,6 +55,12 @@ function handleSharedError (error: unknown): ShowcaseReviewFailure | null {
   }
   if (error instanceof Error && error.message === SESSION_DB_UNAVAILABLE) {
     return { status: 503, body: { error: 'Could not verify your session because the database is unavailable.' } }
+  }
+  if (error instanceof Error && error.message === ADMIN_APPROVAL_REQUIRED) {
+    return { status: 403, body: { error: 'Your admin account is still waiting for super-user approval.' } }
+  }
+  if (error instanceof Error && error.message === ADMIN_FORBIDDEN) {
+    return { status: 403, body: { error: 'You do not have permission to review showcase submissions.' } }
   }
   if (error instanceof ShowcaseReviewConfigError) {
     return { status: 503, body: { error: error.message } }

@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { v2 as cloudinary } from 'cloudinary'
-import { getCloudinaryUploadFolder } from '@/lib/cloudinary/folder'
+import { getCloudinaryGalleryFolder } from '@/lib/cloudinary/folder'
 import type { HomeGalleryPhoto } from '@/lib/gallery/types'
 
 function configure () {
@@ -14,15 +14,18 @@ function configure () {
 }
 
 /**
- * Lists images under the same folder as signed uploads (see `getCloudinaryUploadFolder`).
- * Used when the DB has no image rows yet but assets exist in Cloudinary.
+ * Lists images under the gallery sub-folder only (see `getCloudinaryGalleryFolder`).
+ * Used as a fallback when the DB has no `images` rows yet but assets exist in Cloudinary.
+ *
+ * IMPORTANT: this MUST NOT include the showcase sub-folder, otherwise submitter
+ * screenshots would leak into the public homepage gallery mosaic.
  */
 export async function listCursorKenyaImages (
   maxResults: number
 ): Promise<HomeGalleryPhoto[]> {
   if (!configure()) return []
 
-  const prefix = getCloudinaryUploadFolder()
+  const prefix = getCloudinaryGalleryFolder()
 
   type Resource = {
     public_id: string

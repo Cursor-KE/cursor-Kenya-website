@@ -15,10 +15,14 @@ export type UploadedImagePayload = {
   height?: number
 }
 
+export type UploadKind = 'gallery' | 'showcase'
+
 type UploadWidgetProps = {
   onUploaded: (payload: UploadedImagePayload) => void | Promise<void>
   /** Called once after the batch finishes (after all per-file uploads / saves). */
   onBatchComplete?: () => void | Promise<void>
+  /** Which Cloudinary sub-folder to upload into. Defaults to `gallery`. */
+  kind?: UploadKind
   className?: string
 }
 
@@ -62,11 +66,14 @@ async function uploadOneImage (
   file: File,
   fileIndex: number,
   totalFiles: number,
-  setProgress: (n: number) => void
+  setProgress: (n: number) => void,
+  kind: UploadKind
 ): Promise<UploadedImagePayload> {
   const signRes = await fetch('/api/cloudinary/sign', {
     method: 'POST',
     credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind }),
   })
   if (!signRes.ok) {
     const t = await signRes.text()
@@ -125,7 +132,12 @@ async function uploadOneImage (
   })
 }
 
-export function UploadWidget ({ onUploaded, onBatchComplete, className }: UploadWidgetProps) {
+export function UploadWidget ({
+  onUploaded,
+  onBatchComplete,
+  kind = 'gallery',
+  className,
+}: UploadWidgetProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const stagedRef = useRef<StagedItem[]>([])
   const [staged, setStaged] = useState<StagedItem[]>([])
@@ -214,7 +226,7 @@ export function UploadWidget ({ onUploaded, onBatchComplete, className }: Upload
         )
 
         try {
-          const payload = await uploadOneImage(item.file, i, items.length, setProgress)
+          const payload = await uploadOneImage(item.file, i, items.length, setProgress, kind)
           await Promise.resolve(onUploaded(payload))
           ok += 1
           removeOne(item.id)
