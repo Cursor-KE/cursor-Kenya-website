@@ -42,7 +42,7 @@ export function AuthForm () {
         name: name || email.split('@')[0],
       })
       if (error) throw new Error(error.message ?? 'Sign up failed')
-      toast.success('Account created — you can sign in')
+      toast.success('Admin request submitted. The super user will review your access.')
       router.push('/admin')
       router.refresh()
     } catch (err) {
@@ -58,7 +58,7 @@ export function AuthForm () {
         Admin access
       </h1>
       <p className="mt-2 text-center text-sm text-muted-foreground">
-        Sign in to manage Cursor Kenya content.
+        Sign in to manage Cursor Kenya content. New admin accounts require super-user approval.
       </p>
       <Tabs defaultValue="signin" className="mt-8">
         <TabsList className="grid w-full grid-cols-2 bg-secondary/80">
@@ -141,7 +141,7 @@ export function AuthForm () {
               disabled={loading}
               className="w-full bg-gradient-to-r from-primary to-primary-end text-primary-foreground"
             >
-              {loading ? '…' : 'Create account'}
+              {loading ? '…' : 'Request admin access'}
             </Button>
           </form>
         </TabsContent>
