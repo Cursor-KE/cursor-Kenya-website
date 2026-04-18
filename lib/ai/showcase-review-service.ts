@@ -123,7 +123,7 @@ async function saveActionRecord (input: {
     id,
     showcaseId: input.showcaseId,
     reviewId: input.reviewId,
-    action: 'approve',
+    action: 'approve_and_feature',
     actionSource: 'ai_auto_action',
     policySnapshot: input.policyOutcome,
     executedByUserId: null,
@@ -167,7 +167,7 @@ async function applyAutoApproveIfAllowed (input: {
 
   await db
     .update(communityShowcase)
-    .set({ status: 'approved' })
+    .set({ status: 'approved', featured: true })
     .where(and(eq(communityShowcase.id, current.id), eq(communityShowcase.status, 'pending')))
 
   revalidateShowcaseAdminViews()

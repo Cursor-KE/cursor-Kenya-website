@@ -21,7 +21,7 @@ export function evaluateShowcasePolicy (input: {
   if (!input.validationSignals.screenshotCountOk) reasons.push('Screenshots failed validation.')
   if (input.validationSignals.duplicateScreenshots) reasons.push('Duplicate screenshots were submitted.')
   if (input.review.recommendation !== 'approve') reasons.push('AI did not recommend approval.')
-  if (input.review.qualityScore < 8) reasons.push('Quality score is below the auto-approve threshold.')
+  if (input.review.qualityScore < 5) reasons.push('Quality score is below the auto-approve-and-feature threshold.')
   if (input.review.riskFlags.length > 0) reasons.push('Risk flags require manual review.')
 
   if (reasons.length > 0) {
@@ -34,7 +34,7 @@ export function evaluateShowcasePolicy (input: {
 
   return {
     decisionMode: 'auto_approved',
-    autoAction: 'approve',
-    reasons: ['Policy allowed auto-approval for a strong, low-risk pending submission.'],
+    autoAction: 'approve_and_feature',
+    reasons: ['Policy allowed auto-approval and featuring for a qualifying pending submission.'],
   }
 }

@@ -28,7 +28,7 @@ export const showcaseValidationSignalsSchema = z.object({
 
 export const showcaseReviewPolicyOutcomeSchema = z.object({
   decisionMode: z.enum(['manual_review', 'auto_approved']),
-  autoAction: z.enum(['approve']).nullable(),
+  autoAction: z.enum(['approve_and_feature']).nullable(),
   reasons: z.array(z.string().trim().min(1).max(200)).max(8),
 }).strict()
 
@@ -43,7 +43,7 @@ export type ShowcaseSavedReview = {
   review: ShowcaseReviewResult
   autoAction?: {
     id: string
-    action: 'approve'
+    action: 'approve_and_feature'
     success: boolean
     executedAt: string
     failureReason: string | null

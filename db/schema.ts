@@ -210,7 +210,7 @@ export type ShowcaseValidationSignals = {
 
 export type ShowcaseReviewPolicyOutcome = {
   decisionMode: 'manual_review' | 'auto_approved'
-  autoAction: 'approve' | null
+  autoAction: 'approve_and_feature' | null
   reasons: string[]
 }
 
@@ -252,7 +252,7 @@ export type ShowcaseAiActionPayload = {
   id: string
   showcaseId: string
   reviewId: string
-  action: 'approve'
+  action: 'approve_and_feature'
   actionSource: 'ai_auto_action'
   policySnapshot: ShowcaseReviewPolicyOutcome
   executedByUserId: string | null
@@ -273,7 +273,7 @@ export const showcaseAiActions = pgTable(
     reviewId: text('review_id')
       .notNull()
       .references(() => showcaseAiReviews.id, { onDelete: 'cascade' }),
-    action: text('action').notNull().$type<'approve'>(),
+    action: text('action').notNull().$type<'approve_and_feature'>(),
     actionSource: text('action_source').notNull().$type<'ai_auto_action'>(),
     policySnapshot: jsonb('policy_snapshot').notNull().$type<ShowcaseReviewPolicyOutcome>(),
     executedByUserId: text('executed_by_user_id'),

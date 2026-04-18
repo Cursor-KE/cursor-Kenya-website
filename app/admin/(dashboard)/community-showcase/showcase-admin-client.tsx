@@ -162,7 +162,7 @@ export function ShowcaseAdminClient ({
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-foreground">Guarded auto-actions</p>
             <p className="text-sm text-muted-foreground">
-              Batch review auto-approves only strong pending submissions with clean validation and no risk flags.
+              Batch review auto-approves and features pending submissions scoring 5+ with clean validation and no risk flags.
             </p>
           </div>
           <Button type="button" variant="outline" disabled={batchReviewing} onClick={reviewPendingBatch}>
@@ -329,7 +329,7 @@ export function ShowcaseAdminClient ({
                         <Badge variant="secondary">Suggested feature</Badge>
                       ) : null}
                       {reviews[row.id].autoAction?.success ? (
-                        <Badge variant="default">AI acted automatically</Badge>
+                        <Badge variant="default">AI approved + featured</Badge>
                       ) : null}
                     </div>
                     <CardDescription>{reviews[row.id].review.summary}</CardDescription>
@@ -396,7 +396,7 @@ export function ShowcaseAdminClient ({
                         </p>
                         <p className="mt-1 text-sm text-foreground/90">
                           {reviews[row.id].autoAction?.success
-                            ? `Approved automatically from ${reviews[row.id].autoAction?.preActionStatus} to ${reviews[row.id].autoAction?.postActionStatus}.`
+                            ? `Approved and featured automatically from ${reviews[row.id].autoAction?.preActionStatus} to ${reviews[row.id].autoAction?.postActionStatus}.`
                             : `Auto-action blocked: ${reviews[row.id].autoAction?.failureReason ?? 'Unknown failure.'}`}
                         </p>
                       </div>
