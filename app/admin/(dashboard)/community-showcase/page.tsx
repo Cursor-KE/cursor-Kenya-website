@@ -1,10 +1,14 @@
 import { ShowcaseAdminClient } from '@/app/admin/(dashboard)/community-showcase/showcase-admin-client'
-import { getAllCommunityShowcaseForAdmin } from '@/lib/queries'
+import { getAllCommunityShowcaseForAdmin, getLatestShowcaseAiReviewsForAdmin } from '@/lib/queries'
 
 export default async function AdminCommunityShowcasePage () {
   let rows: Awaited<ReturnType<typeof getAllCommunityShowcaseForAdmin>> = []
+  let initialReviews: Awaited<ReturnType<typeof getLatestShowcaseAiReviewsForAdmin>> = {}
   try {
-    rows = await getAllCommunityShowcaseForAdmin()
+    ;[rows, initialReviews] = await Promise.all([
+      getAllCommunityShowcaseForAdmin(),
+      getLatestShowcaseAiReviewsForAdmin(),
+    ])
   } catch {
     // database unavailable
   }
@@ -20,7 +24,11 @@ export default async function AdminCommunityShowcasePage () {
           AI reviews are unavailable until `OPENAI_API_KEY` is configured on the server.
         </p>
       ) : null}
-      <ShowcaseAdminClient rows={rows} aiEnabled={Boolean(process.env.OPENAI_API_KEY)} />
+      <ShowcaseAdminClient
+        rows={rows}
+        aiEnabled={Boolean(process.env.OPENAI_API_KEY)}
+        initialReviews={initialReviews}
+      />
     </div>
   )
 }
