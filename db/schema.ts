@@ -11,18 +11,32 @@ import {
 } from 'drizzle-orm/pg-core'
 
 // —— Better Auth (PostgreSQL, text ids) ——
-export const user = pgTable('user', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  email: text('email').notNull().unique(),
-  emailVerified: boolean('email_verified').default(false).notNull(),
-  image: text('image'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
-})
+export const adminRoleEnum = pgEnum('admin_role', ['super_user', 'admin'])
+export const adminStatusEnum = pgEnum('admin_status', ['pending', 'approved', 'rejected'])
+
+export const user = pgTable(
+  'user',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    email: text('email').notNull().unique(),
+    emailVerified: boolean('email_verified').default(false).notNull(),
+    image: text('image'),
+    role: adminRoleEnum('role').notNull().default('admin'),
+    adminStatus: adminStatusEnum('admin_status').notNull().default('pending'),
+    approvedByUserId: text('approved_by_user_id'),
+    approvedAt: timestamp('approved_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('user_role_idx').on(table.role),
+    index('user_admin_status_idx').on(table.adminStatus),
+  ]
+)
 
 export const session = pgTable(
   'session',
