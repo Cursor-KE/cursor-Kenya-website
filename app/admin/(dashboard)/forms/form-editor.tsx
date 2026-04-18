@@ -61,7 +61,7 @@ export function FormEditor ({
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="title">Title</Label>
           <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="border-border bg-background/60" />
@@ -89,12 +89,12 @@ export function FormEditor ({
         <FormBuilder value={definition} onChange={setDefinition} />
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Button
           type="button"
           disabled={saving}
           onClick={onSave}
-          className="bg-gradient-to-r from-primary to-primary-end text-primary-foreground"
+          className="w-full bg-gradient-to-r from-primary to-primary-end text-primary-foreground sm:w-auto"
         >
           {saving ? 'Saving…' : 'Save form'}
         </Button>
@@ -103,7 +103,7 @@ export function FormEditor ({
             href={`/forms/${slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className={cn(buttonVariants({ variant: 'outline' }))}
+            className={cn(buttonVariants({ variant: 'outline' }), 'w-full sm:w-auto')}
           >
             Open public link
           </a>

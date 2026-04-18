@@ -71,8 +71,8 @@ export function GalleryAdminClient ({
   }
 
   return (
-    <div className="mt-8 space-y-12">
-      <section className="rounded-2xl border border-border bg-card/50 p-6">
+    <div className="space-y-8 sm:space-y-10">
+      <section className="rounded-2xl border border-border bg-card/50 p-4 sm:p-6">
         <h2 className="text-lg font-medium text-foreground">Upload images</h2>
         <p className="mt-1 text-sm text-muted-foreground">Images are stored on Cloudinary and listed on the public gallery.</p>
         <div className="mt-4">
@@ -82,7 +82,7 @@ export function GalleryAdminClient ({
           {photos.map((p) => (
             <li
               key={p.id}
-              className="flex items-center gap-4 rounded-xl border border-border/60 bg-background/40 px-3 py-2 text-sm"
+              className="flex flex-col gap-3 rounded-xl border border-border/60 bg-background/40 px-3 py-3 text-sm sm:flex-row sm:items-center"
             >
               <a
                 href={p.secureUrl}
@@ -102,7 +102,7 @@ export function GalleryAdminClient ({
                 />
               </a>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-mono text-xs text-muted-foreground" title={p.publicId}>
+                <p className="break-all font-mono text-xs text-muted-foreground" title={p.publicId}>
                   {p.publicId}
                 </p>
                 {p.width != null && p.height != null ? (
@@ -115,7 +115,7 @@ export function GalleryAdminClient ({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="shrink-0"
+                className="self-end shrink-0 sm:self-auto"
                 onClick={async () => {
                   try {
                     await deleteImage(p.id)
@@ -133,13 +133,13 @@ export function GalleryAdminClient ({
         </ul>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card/50 p-6">
+      <section className="rounded-2xl border border-border bg-card/50 p-4 sm:p-6">
         <h2 className="text-lg font-medium text-foreground">YouTube videos</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Paste a video ID (from youtube.com/watch?v=...). Order matches the public gallery — use the arrows beside each row to move it up or down.
         </p>
-        <form onSubmit={addVideo} className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end">
-          <div className="flex-1 space-y-2">
+        <form onSubmit={addVideo} className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] lg:items-end">
+          <div className="min-w-0 space-y-2">
             <Label htmlFor="yt">Video ID</Label>
             <Input
               id="yt"
@@ -149,7 +149,7 @@ export function GalleryAdminClient ({
               className="border-border bg-background/60"
             />
           </div>
-          <div className="flex-1 space-y-2">
+          <div className="min-w-0 space-y-2">
             <Label htmlFor="ytt">Title (optional)</Label>
             <Input
               id="ytt"
@@ -158,11 +158,14 @@ export function GalleryAdminClient ({
               className="border-border bg-background/60"
             />
           </div>
-          <div className="flex items-center gap-2 pb-2">
+          <div className="flex items-center gap-2 lg:pb-2">
             <Switch id="ytf" checked={ytFeat} onCheckedChange={setYtFeat} />
             <Label htmlFor="ytf">Featured</Label>
           </div>
-          <Button type="submit" className="bg-gradient-to-r from-primary to-primary-end text-primary-foreground">
+          <Button
+            type="submit"
+            className="w-full bg-gradient-to-r from-primary to-primary-end text-primary-foreground lg:w-auto"
+          >
             Add video
           </Button>
         </form>
@@ -170,15 +173,15 @@ export function GalleryAdminClient ({
           {videoRows.map((v, i) => (
             <li
               key={v.id}
-              className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-background/40 px-3 py-2 text-sm"
+              className="flex flex-col gap-3 rounded-xl border border-border/60 bg-background/40 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
             >
-              <span className="min-w-0 flex-1 truncate text-foreground">
+              <span className="min-w-0 flex-1 break-words text-foreground">
                 {v.title ?? v.youtubeVideoId}{' '}
                 {v.featured ? (
                   <span className="ml-2 rounded-md bg-primary/20 px-1.5 py-0.5 text-xs text-primary">featured</span>
                 ) : null}
               </span>
-              <div className="flex shrink-0 items-center gap-0.5">
+              <div className="flex shrink-0 items-center gap-0.5 self-end sm:self-auto">
                 <Button
                   type="button"
                   variant="ghost"

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { eq } from 'drizzle-orm'
+import { AdminPageShell } from '@/components/admin-page-shell'
 import { db } from '@/db'
 import { forms } from '@/db/schema'
 import { FormEditor } from '@/app/admin/(dashboard)/forms/form-editor'
@@ -19,10 +20,12 @@ export default async function EditFormPage ({
   const definition = def.success ? def.data : { blocks: [] }
 
   return (
-    <div className="p-6 lg:p-10">
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Edit form</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Update fields and publish.</p>
-      <div className="mt-8 max-w-2xl">
+    <AdminPageShell
+      title="Edit form"
+      description="Update fields and publish."
+      contentClassName="max-w-4xl"
+    >
+      <div className="max-w-4xl">
         <FormEditor
           initial={{
             id: form.id,
@@ -33,6 +36,6 @@ export default async function EditFormPage ({
           }}
         />
       </div>
-    </div>
+    </AdminPageShell>
   )
 }

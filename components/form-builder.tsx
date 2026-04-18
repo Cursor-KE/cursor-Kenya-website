@@ -55,12 +55,12 @@ function SortableBlock ({
     <Card
       ref={setNodeRef}
       style={style}
-      className="border-border bg-card/70 p-4 backdrop-blur-sm"
+      className="border-border bg-card/70 p-3 sm:p-4 backdrop-blur-sm"
     >
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <button
           type="button"
-          className="mt-1 cursor-grab touch-none text-muted-foreground hover:text-foreground"
+          className="cursor-grab touch-none self-start text-muted-foreground hover:text-foreground"
           {...attributes}
           {...listeners}
           aria-label="Drag to reorder"
@@ -89,7 +89,7 @@ function SortableBlock ({
                 }
               }}
             >
-              <SelectTrigger className="h-8 w-[160px] border-border bg-background/60 text-xs">
+              <SelectTrigger className="h-8 w-full border-border bg-background/60 text-xs sm:w-[160px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -98,7 +98,7 @@ function SortableBlock ({
                 <SelectItem value="select">Select</SelectItem>
               </SelectContent>
             </Select>
-            <Button type="button" variant="ghost" size="icon" className="ml-auto" onClick={onRemove}>
+            <Button type="button" variant="ghost" size="icon" className="sm:ml-auto" onClick={onRemove}>
               <Trash2 className="h-4 w-4 text-muted-foreground" />
             </Button>
           </div>

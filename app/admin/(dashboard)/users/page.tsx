@@ -1,5 +1,6 @@
 import { type InferSelectModel, desc, eq } from 'drizzle-orm'
 import { Button } from '@/components/ui/button'
+import { AdminPageShell } from '@/components/admin-page-shell'
 import { db } from '@/db'
 import { user } from '@/db/schema'
 import { approveAdminUser, rejectAdminUser } from '@/lib/actions/admin-users'
@@ -58,7 +59,7 @@ function UserSection ({
   canReject: boolean
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-card/50 p-6">
+    <section className="rounded-2xl border border-border bg-card/50 p-4 sm:p-6">
       <div>
         <h2 className="text-lg font-medium text-foreground">{title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
@@ -71,11 +72,11 @@ function UserSection ({
           {rows.map((row) => (
             <div
               key={row.id}
-              className="flex flex-col gap-4 rounded-xl border border-border/70 bg-background/70 p-4 lg:flex-row lg:items-center lg:justify-between"
+              className="flex flex-col gap-4 rounded-xl border border-border/70 bg-background/70 p-4 xl:flex-row xl:items-center xl:justify-between"
             >
-              <div>
-                <p className="font-medium text-foreground">{row.name}</p>
-                <p className="text-sm text-muted-foreground">{row.email}</p>
+              <div className="min-w-0">
+                <p className="break-words font-medium text-foreground">{row.name}</p>
+                <p className="break-all text-sm text-muted-foreground">{row.email}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Signed up {new Date(row.createdAt).toLocaleString()}
                 </p>
@@ -103,13 +104,11 @@ export default async function AdminUsersPage () {
   ])
 
   return (
-    <div className="p-6 lg:p-10">
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Admin users</h1>
-      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-        Review admin signup requests, approve access, and keep track of which accounts are still waiting.
-      </p>
-
-      <div className="mt-8 space-y-6">
+    <AdminPageShell
+      title="Admin users"
+      description="Review admin signup requests, approve access, and keep track of which accounts are still waiting."
+    >
+      <div className="space-y-6">
         <UserSection
           title="Pending approvals"
           description="New admin signups appear here until you review them."
@@ -132,6 +131,6 @@ export default async function AdminUsersPage () {
           canReject={false}
         />
       </div>
-    </div>
+    </AdminPageShell>
   )
 }

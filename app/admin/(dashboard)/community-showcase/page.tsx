@@ -1,4 +1,5 @@
 import { ShowcaseAdminClient } from '@/app/admin/(dashboard)/community-showcase/showcase-admin-client'
+import { AdminPageShell } from '@/components/admin-page-shell'
 import { getAllCommunityShowcaseForAdmin, getLatestShowcaseAiReviewsForAdmin } from '@/lib/queries'
 
 export default async function AdminCommunityShowcasePage () {
@@ -14,13 +15,12 @@ export default async function AdminCommunityShowcasePage () {
   }
 
   return (
-    <div className="p-6 lg:p-10">
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Community showcase</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Review submissions, approve or reject, feature approved projects, and set display order.
-      </p>
+    <AdminPageShell
+      title="Community showcase"
+      description="Review submissions, approve or reject, feature approved projects, and set display order."
+    >
       {!process.env.OPENAI_API_KEY ? (
-        <p className="mt-3 rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
           AI reviews are unavailable until `OPENAI_API_KEY` is configured on the server.
         </p>
       ) : null}
@@ -29,6 +29,6 @@ export default async function AdminCommunityShowcasePage () {
         aiEnabled={Boolean(process.env.OPENAI_API_KEY)}
         initialReviews={initialReviews}
       />
-    </div>
+    </AdminPageShell>
   )
 }

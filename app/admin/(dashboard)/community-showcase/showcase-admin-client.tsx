@@ -158,29 +158,30 @@ export function ShowcaseAdminClient ({
   return (
     <>
       {aiEnabled ? (
-        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card/40 p-4">
+        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card/40 p-4 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-foreground">Guarded auto-actions</p>
             <p className="text-sm text-muted-foreground">
               Batch review auto-approves and features pending submissions scoring 5+ with clean validation and no risk flags.
             </p>
           </div>
-          <Button type="button" variant="outline" disabled={batchReviewing} onClick={reviewPendingBatch}>
+          <Button type="button" variant="outline" className="w-full sm:w-auto" disabled={batchReviewing} onClick={reviewPendingBatch}>
             <ShieldCheck className="h-4 w-4" />
             {batchReviewing ? 'Reviewing pending…' : 'Review Pending With AI'}
           </Button>
         </div>
       ) : null}
-      <ul className="mt-8 space-y-3">
+      <ul className="space-y-3">
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">No submissions yet.</p>
       ) : (
         rows.map((row, i) => (
           <li
             key={row.id}
-            className="flex flex-col gap-4 rounded-xl border border-border bg-card/50 p-4 sm:flex-row sm:items-start"
+            className="grid gap-4 rounded-xl border border-border bg-card/50 p-4 xl:grid-cols-[minmax(0,1fr)_auto]"
           >
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap gap-2">
               {row.screenshotUrls.slice(0, 3).map((url, j) => (
                 <div
                   key={`${row.id}-thumb-${j}`}
@@ -192,8 +193,8 @@ export function ShowcaseAdminClient ({
                     width={200}
                     height={120}
                     className="h-full w-full object-cover"
-                    unoptimized
-                  />
+                  unoptimized
+                />
                 </div>
               ))}
             </div>
@@ -405,7 +406,7 @@ export function ShowcaseAdminClient ({
                 </Card>
               ) : null}
               {row.status === 'approved' ? (
-                <div className="flex items-center gap-2 pt-2">
+                <div className="flex flex-wrap items-center gap-2 pt-2">
                   <Switch
                     id={`feat-${row.id}`}
                     checked={row.featured}
@@ -422,7 +423,8 @@ export function ShowcaseAdminClient ({
                 </div>
               ) : null}
             </div>
-            <div className="flex shrink-0 items-center gap-0.5 self-end sm:self-start">
+            </div>
+            <div className="flex shrink-0 items-center gap-0.5 justify-self-end self-start">
               <Button
                 type="button"
                 variant="ghost"

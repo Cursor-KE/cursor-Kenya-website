@@ -25,7 +25,33 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarInset,
+  SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar'
+
+function AdminNavLink ({
+  href,
+  className,
+  children,
+}: {
+  href: string
+  className?: string
+  children: React.ReactNode
+}) {
+  const { isMobile, setOpenMobile } = useSidebar()
+
+  return (
+    <Link
+      href={href}
+      className={className}
+      onClick={() => {
+        if (isMobile) setOpenMobile(false)
+      }}
+    >
+      {children}
+    </Link>
+  )
+}
 
 export function AdminChrome ({
   children,
@@ -71,7 +97,10 @@ export function AdminChrome ({
                           : pathname.startsWith(item.href)
                       }
                       render={
-                        <Link href={item.href} className="flex items-center gap-2">
+                        <AdminNavLink
+                          href={item.href}
+                          className="flex items-center gap-2"
+                        >
                           <item.icon className="h-4 w-4" />
                           <span>{item.label}</span>
                           {item.href === '/admin/users' && pendingAdminCount > 0 ? (
@@ -79,7 +108,7 @@ export function AdminChrome ({
                               {pendingAdminCount}
                             </span>
                           ) : null}
-                        </Link>
+                        </AdminNavLink>
                       }
                     />
                   </SidebarMenuItem>
@@ -92,8 +121,17 @@ export function AdminChrome ({
           <AuthSignOutButton className="w-full justify-start text-muted-foreground" />
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="bg-background">
-        <div className={cn('min-h-svh border-border bg-background')}>{children}</div>
+      <SidebarInset className="min-w-0 bg-background">
+        <div className={cn('flex min-h-svh min-w-0 flex-col border-border bg-background')}>
+          <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-border/80 bg-background/95 px-4 py-3 backdrop-blur md:hidden">
+            <SidebarTrigger className="shrink-0" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-foreground">Admin workspace</p>
+              <p className="truncate text-xs text-muted-foreground">Cursor Kenya</p>
+            </div>
+          </div>
+          <div className="min-w-0 flex-1">{children}</div>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )
