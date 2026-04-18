@@ -195,7 +195,7 @@ export function UploadWidget ({ onUploaded, onBatchComplete, className }: Upload
     setProgress(0)
     setStatusLine('')
 
-    const loadingId = toast.loading(
+    toast.loading(
       items.length === 1 ? 'Uploading image…' : `Uploading 0 / ${items.length}…`,
       { id: UPLOAD_TOAST, duration: Infinity }
     )
@@ -227,30 +227,27 @@ export function UploadWidget ({ onUploaded, onBatchComplete, className }: Upload
 
       setProgress(100)
 
+      toast.dismiss(UPLOAD_TOAST)
+
       if (ok > 0 && failed === 0) {
         toast.success(ok === 1 ? 'Image saved to gallery' : `${ok} images saved to gallery`, {
-          id: UPLOAD_TOAST,
           duration: UPLOAD_RESULT_TOAST_DURATION,
           dismissible: true,
         })
       } else if (ok > 0 && failed > 0) {
         toast.warning(`${ok} saved, ${failed} failed`, {
-          id: UPLOAD_TOAST,
           duration: UPLOAD_WARNING_TOAST_DURATION,
           dismissible: true,
           description: lastError ?? undefined,
         })
       } else if (failed > 0) {
         toast.error(lastError ?? 'Upload or save failed', {
-          id: UPLOAD_TOAST,
           duration: 12000,
           description:
             items.length > 1
               ? `${failed} file(s) failed. Check the database connection and that you are signed in.`
               : 'Check Cloudinary env vars, database, and that you are signed in.',
         })
-      } else {
-        toast.dismiss(loadingId)
       }
 
       try {
