@@ -1,4 +1,5 @@
 import { desc, eq, sql } from 'drizzle-orm'
+import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { AdminPageShell } from '@/components/admin-page-shell'
 import { db } from '@/db'
@@ -45,33 +46,45 @@ export default async function AdminDashboardPage () {
     >
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: 'Images', value: stats?.img_c ?? 0 },
-          { label: 'Videos', value: stats?.vid_c ?? 0 },
-          { label: 'Forms', value: stats?.form_c ?? 0 },
-          { label: 'Responses', value: stats?.resp_c ?? 0 },
+          { label: 'Images', value: stats?.img_c ?? 0, href: '/admin/gallery' },
+          { label: 'Videos', value: stats?.vid_c ?? 0, href: '/admin/gallery' },
+          { label: 'Forms', value: stats?.form_c ?? 0, href: '/admin/forms' },
+          { label: 'Responses', value: stats?.resp_c ?? 0, href: '/admin/responses' },
         ].map((s) => (
-          <Card
+          <Link
             key={s.label}
-            className="border border-border bg-card/60 backdrop-blur-sm"
+            href={s.href}
+            aria-label={`${s.label}: ${Number(s.value)}. Open ${s.label} admin.`}
+            className="group rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <CardContent className="space-y-2 p-5">
-              <p className="text-sm text-muted-foreground">{s.label}</p>
-              <p className="text-3xl font-semibold tabular-nums text-foreground">{Number(s.value)}</p>
-            </CardContent>
-          </Card>
+            <Card
+              className="border border-border bg-card/60 backdrop-blur-sm transition-colors group-hover:border-primary/40 group-hover:bg-card/80"
+            >
+              <CardContent className="space-y-2 p-5">
+                <p className="text-sm text-muted-foreground">{s.label}</p>
+                <p className="text-3xl font-semibold tabular-nums text-foreground">{Number(s.value)}</p>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
       {currentUser.user.role === 'super_user' ? (
-        <Card className="border border-primary/20 bg-primary/5">
-          <CardContent className="space-y-2 p-5">
-            <p className="text-sm font-medium text-foreground">Admin approvals</p>
-            <p className="text-3xl font-semibold tabular-nums text-foreground">{pendingAdminCount}</p>
-            <p className="text-sm text-muted-foreground">
-              Pending admin signup{pendingAdminCount === 1 ? '' : 's'} waiting for your review.
-            </p>
-          </CardContent>
-        </Card>
+        <Link
+          href="/admin/users"
+          aria-label={`Admin approvals: ${pendingAdminCount} pending. Open admin users.`}
+          className="group block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <Card className="border border-primary/20 bg-primary/5 transition-colors group-hover:border-primary/40 group-hover:bg-primary/10">
+            <CardContent className="space-y-2 p-5">
+              <p className="text-sm font-medium text-foreground">Admin approvals</p>
+              <p className="text-3xl font-semibold tabular-nums text-foreground">{pendingAdminCount}</p>
+              <p className="text-sm text-muted-foreground">
+                Pending admin signup{pendingAdminCount === 1 ? '' : 's'} waiting for your review.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       ) : null}
 
       <Card className="border border-border bg-card/40">
