@@ -27,17 +27,19 @@ export default async function AdminResponsesPage () {
           <p className="text-sm text-muted-foreground">No responses yet.</p>
         ) : (
           responses.map((r) => (
-            <li
-              key={r.id}
-              className="flex flex-col gap-3 rounded-xl border border-border bg-card/50 px-4 py-4 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
-            >
-              <span className="break-words font-medium text-foreground">{r.formTitle ?? r.formId}</span>
-              <span className="text-muted-foreground">{new Date(r.createdAt).toLocaleString()}</span>
-              {r.formId ? (
-                <Link href={`/admin/forms/${r.formId}`} className="w-fit text-primary hover:underline">
-                  Edit form
-                </Link>
-              ) : null}
+            <li key={r.id}>
+              <Link
+                href={`/admin/responses/${r.id}`}
+                className="flex flex-col gap-3 rounded-xl border border-border bg-card/50 px-4 py-4 text-sm transition-colors hover:border-primary/40 hover:bg-card sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+              >
+                <span className="break-words font-medium text-foreground">
+                  {r.formTitle ?? r.formId}
+                </span>
+                <span className="flex items-center gap-3 text-muted-foreground">
+                  <span>{new Date(r.createdAt).toLocaleString()}</span>
+                  <span className="text-primary">View</span>
+                </span>
+              </Link>
             </li>
           ))
         )}
