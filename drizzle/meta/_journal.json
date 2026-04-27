@@ -29,6 +29,13 @@
       "when": 1776537086091,
       "tag": "0003_admin_approvals",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777000000000,
+      "tag": "0004_testimonials",
+      "breakpoints": true
     }
   ]
 }

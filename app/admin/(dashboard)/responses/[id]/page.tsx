@@ -5,8 +5,12 @@ import { ArrowLeft } from 'lucide-react'
 import { AdminPageShell } from '@/components/admin-page-shell'
 import { buttonVariants } from '@/components/ui/button'
 import { db } from '@/db'
-import { formResponses, forms } from '@/db/schema'
+import { formResponses, forms, testimonials } from '@/db/schema'
 import { formDefinitionSchema, type FormBlock } from '@/lib/forms/types'
+import {
+  AnswerTestimonialControls,
+  type ExistingTestimonial,
+} from './answer-testimonial-controls'
 
 function formatAnswer (value: unknown): string {
   if (value === undefined || value === null) return ''
@@ -52,6 +56,31 @@ export default async function AdminResponseDetailPage ({
   const knownIds = new Set(blocks.map((b) => b.id))
   const orphanAnswers = Object.entries(answers).filter(([key]) => !knownIds.has(key))
 
+  const existingTestimonials = await db
+    .select({
+      id: testimonials.id,
+      blockId: testimonials.blockId,
+      attendeeName: testimonials.attendeeName,
+      attendeeRole: testimonials.attendeeRole,
+      published: testimonials.published,
+    })
+    .from(testimonials)
+    .where(eq(testimonials.responseId, id))
+
+  const testimonialByBlock = new Map<string, ExistingTestimonial>(
+    existingTestimonials
+      .filter((t): t is typeof t & { blockId: string } => Boolean(t.blockId))
+      .map((t) => [
+        t.blockId,
+        {
+          id: t.id,
+          attendeeName: t.attendeeName,
+          attendeeRole: t.attendeeRole,
+          published: t.published,
+        },
+      ])
+  )
+
   return (
     <AdminPageShell
       title={response.formTitle ?? 'Response'}
@@ -89,6 +118,7 @@ export default async function AdminResponseDetailPage ({
               const raw = answers[block.id]
               const text = formatAnswer(raw)
               const isEmpty = text.trim() === ''
+              const isShareable = block.type === 'short_text' || block.type === 'long_text'
               return (
                 <div
                   key={block.id}
@@ -104,6 +134,14 @@ export default async function AdminResponseDetailPage ({
                       text
                     )}
                   </dd>
+                  {isShareable ? (
+                    <AnswerTestimonialControls
+                      responseId={response.id}
+                      blockId={block.id}
+                      initial={testimonialByBlock.get(block.id) ?? null}
+                      isAnswerEmpty={isEmpty}
+                    />
+                  ) : null}
                 </div>
               )
             })}

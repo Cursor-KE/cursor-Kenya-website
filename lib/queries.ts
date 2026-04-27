@@ -2,7 +2,7 @@ import 'server-only'
 
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db'
-import { communityShowcase, images, showcaseAiActions, showcaseAiReviews, videos } from '@/db/schema'
+import { communityShowcase, images, showcaseAiActions, showcaseAiReviews, testimonials, videos } from '@/db/schema'
 import type { ShowcaseSavedReview } from '@/lib/ai/showcase-review-schema'
 import { listCursorKenyaImages } from '@/lib/cloudinary/list-folder-images'
 import type { HomeGalleryPhoto } from '@/lib/gallery/types'
@@ -102,6 +102,22 @@ export async function getLatestShowcaseAiReviewsForAdmin (): Promise<Record<stri
       ]
     })
   )
+}
+
+export async function getPublishedTestimonials (limit = 12) {
+  return db
+    .select()
+    .from(testimonials)
+    .where(eq(testimonials.published, true))
+    .orderBy(desc(testimonials.featured), desc(testimonials.sortOrder), desc(testimonials.createdAt))
+    .limit(limit)
+}
+
+export async function getAllTestimonialsForAdmin () {
+  return db
+    .select()
+    .from(testimonials)
+    .orderBy(desc(testimonials.featured), desc(testimonials.sortOrder), desc(testimonials.createdAt))
 }
 
 /** Curated gallery rows first; otherwise images listed from the Cloudinary folder (`CLOUDINARY_UPLOAD_PREFIX` or `cursor-kenya`). */

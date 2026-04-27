@@ -179,8 +179,41 @@ export const formsRelations = relations(forms, ({ many }) => ({
   responses: many(formResponses),
 }))
 
-export const formResponsesRelations = relations(formResponses, ({ one }) => ({
+export const formResponsesRelations = relations(formResponses, ({ one, many }) => ({
   form: one(forms, { fields: [formResponses.formId], references: [forms.id] }),
+  testimonials: many(testimonials),
+}))
+
+export const testimonials = pgTable(
+  'testimonials',
+  {
+    id: text('id').primaryKey(),
+    formId: text('form_id').references(() => forms.id, { onDelete: 'set null' }),
+    responseId: text('response_id').references(() => formResponses.id, { onDelete: 'set null' }),
+    blockId: text('block_id'),
+    question: text('question'),
+    quote: text('quote').notNull(),
+    attendeeName: text('attendee_name'),
+    attendeeRole: text('attendee_role'),
+    published: boolean('published').default(true).notNull(),
+    featured: boolean('featured').default(false).notNull(),
+    sortOrder: integer('sort_order').default(0).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [
+    index('testimonials_published_idx').on(t.published),
+    index('testimonials_featured_sort_idx').on(t.featured, t.sortOrder),
+    index('testimonials_response_block_idx').on(t.responseId, t.blockId),
+  ]
+)
+
+export const testimonialsRelations = relations(testimonials, ({ one }) => ({
+  form: one(forms, { fields: [testimonials.formId], references: [forms.id] }),
+  response: one(formResponses, { fields: [testimonials.responseId], references: [formResponses.id] }),
 }))
 
 export const showcaseStatusEnum = pgEnum('showcase_status', ['pending', 'approved', 'rejected'])

@@ -9,6 +9,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getNextUpcomingEvent, getLumaEventsSafe } from '@/lib/luma/client'
 import { HomeCommunityShowcase } from '@/components/home-community-showcase'
+import { HomeTestimonials } from '@/components/home-testimonials'
 import { getFeaturedVideos, getHomeFeaturedImages } from '@/lib/queries'
 import { cn } from '@/lib/utils'
 import { Suspense } from 'react'
@@ -175,6 +176,10 @@ export default function HomePage () {
 
       <Suspense fallback={null}>
         <HomeCommunityShowcase />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <HomeTestimonials />
       </Suspense>
     </div>
   )

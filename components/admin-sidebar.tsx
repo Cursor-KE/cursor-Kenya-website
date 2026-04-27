@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   FileText,
   ListChecks,
+  Quote,
   Sparkles,
   Users,
 } from 'lucide-react'
@@ -69,6 +70,7 @@ export function AdminChrome ({
     { href: '/admin/community-showcase', label: 'Showcase', icon: Sparkles },
     { href: '/admin/forms', label: 'Forms', icon: FileText },
     { href: '/admin/responses', label: 'Responses', icon: ListChecks },
+    { href: '/admin/testimonials', label: 'Testimonials', icon: Quote },
     ...(currentUserRole === 'super_user'
       ? [{ href: '/admin/users', label: 'Admin Users', icon: Users }]
       : []),
