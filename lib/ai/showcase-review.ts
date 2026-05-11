@@ -4,6 +4,10 @@ import {
   showcaseReviewResultSchema,
   type ShowcaseReviewResult,
 } from '@/lib/ai/showcase-review-schema'
+import {
+  SHOWCASE_PROJECT_KIND_LABELS,
+  normalizeStoredProjectKind,
+} from '@/lib/showcase/project-kind'
 import type { ShowcaseValidationSignals } from '@/lib/showcase/validation'
 
 export type ShowcaseReviewSubmission = Pick<
@@ -11,6 +15,7 @@ export type ShowcaseReviewSubmission = Pick<
   | 'id'
   | 'title'
   | 'description'
+  | 'projectKind'
   | 'projectUrl'
   | 'repoUrl'
   | 'builderName'
@@ -54,6 +59,7 @@ export function buildShowcaseReviewPrompt (
     `Currently featured: ${submission.featured ? 'yes' : 'no'}`,
     `Submitted at: ${submission.createdAt.toISOString()}`,
     `Title: ${submission.title}`,
+    `Project kind: ${SHOWCASE_PROJECT_KIND_LABELS[normalizeStoredProjectKind(submission.projectKind)]} (${submission.projectKind})`,
     `Builder name: ${submission.builderName}`,
     `Builder email: ${submission.builderEmail}`,
     `Project URL: ${submission.projectUrl}`,

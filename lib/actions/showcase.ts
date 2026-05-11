@@ -6,8 +6,10 @@ import { revalidatePath } from 'next/cache'
 import { requireApprovedAdmin } from '@/lib/auth/session'
 import { db } from '@/db'
 import { communityShowcase } from '@/db/schema'
+import { isShowcaseProjectKind } from '@/lib/showcase/project-kind'
 import {
   SHOWCASE_DESC_MAX,
+  SHOWCASE_DESC_MAX_WORDS,
   SHOWCASE_DESC_MIN,
   SHOWCASE_DESC_MIN_WORDS,
   SHOWCASE_NAME_MAX,
@@ -16,6 +18,7 @@ import {
   SHOWCASE_SCREENSHOT_MIN,
   SHOWCASE_TITLE_MAX,
   SHOWCASE_TITLE_MIN,
+  countWords,
   getBlockingValidationIssues,
   getShowcaseValidationSignals,
 } from '@/lib/showcase/validation'
@@ -29,6 +32,7 @@ export type SubmitShowcaseResult =
 export async function submitCommunityShowcase (input: {
   title: string
   description: string
+  projectKind: string
   projectUrl: string
   repoUrl?: string
   builderName: string
@@ -37,11 +41,15 @@ export async function submitCommunityShowcase (input: {
 }): Promise<SubmitShowcaseResult> {
   const title = input.title.trim()
   const description = input.description.trim()
+  const projectKindRaw = input.projectKind?.trim() ?? ''
   const projectUrl = input.projectUrl.trim()
   const repoUrl = input.repoUrl?.trim() ?? ''
   const builderName = input.builderName.trim()
   const builderEmail = input.builderEmail.trim().toLowerCase()
   const screenshotUrls = input.screenshotUrls.map((u) => u.trim()).filter(Boolean)
+  if (!projectKindRaw || !isShowcaseProjectKind(projectKindRaw)) {
+    return { ok: false, message: 'Choose what type of project this is.' }
+  }
   const signals = getShowcaseValidationSignals({
     title,
     description,
@@ -58,7 +66,17 @@ export async function submitCommunityShowcase (input: {
     return { ok: false, message: `Description must be ${SHOWCASE_DESC_MIN}-${SHOWCASE_DESC_MAX} characters.` }
   }
   if (!signals.descriptionWordCountOk) {
-    return { ok: false, message: `Description must include at least ${SHOWCASE_DESC_MIN_WORDS} words.` }
+    const words = countWords(description)
+    if (words < SHOWCASE_DESC_MIN_WORDS) {
+      return {
+        ok: false,
+        message: `Description must be at least ${SHOWCASE_DESC_MIN_WORDS} words (currently ${words}).`,
+      }
+    }
+    return {
+      ok: false,
+      message: `Description must be at most ${SHOWCASE_DESC_MAX_WORDS} words (currently ${words}).`,
+    }
   }
   if (!signals.projectUrlOk) {
     return { ok: false, message: 'Enter a valid http(s) project or demo URL.' }
@@ -92,6 +110,7 @@ export async function submitCommunityShowcase (input: {
       id: nanoid(),
       title,
       description,
+      projectKind: projectKindRaw,
       projectUrl,
       repoUrl: repoUrl || null,
       builderName,

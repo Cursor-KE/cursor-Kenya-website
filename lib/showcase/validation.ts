@@ -1,8 +1,10 @@
 export const SHOWCASE_TITLE_MIN = 8
 export const SHOWCASE_TITLE_MAX = 120
-export const SHOWCASE_DESC_MIN = 80
-export const SHOWCASE_DESC_MAX = 2000
-export const SHOWCASE_DESC_MIN_WORDS = 15
+/** Character bounds sized for a short pitch (roughly 8–16 words). */
+export const SHOWCASE_DESC_MIN = 55
+export const SHOWCASE_DESC_MAX = 420
+export const SHOWCASE_DESC_MIN_WORDS = 8
+export const SHOWCASE_DESC_MAX_WORDS = 16
 export const SHOWCASE_NAME_MIN = 2
 export const SHOWCASE_NAME_MAX = 80
 export const SHOWCASE_URL_MAX = 2048
@@ -52,6 +54,27 @@ export function countWords (value: string) {
   return value.trim().split(/\s+/).filter(Boolean).length
 }
 
+/** Inline error for the description field; `null` when valid. Empty input returns `null` (use required / blur messaging in the form). */
+export function getDescriptionFieldError (raw: string): string | null {
+  const d = raw.trim()
+  if (d.length === 0) return null
+  const words = countWords(d)
+  const len = d.length
+  if (words > SHOWCASE_DESC_MAX_WORDS) {
+    return `Use at most ${SHOWCASE_DESC_MAX_WORDS} words (you have ${words}).`
+  }
+  if (words < SHOWCASE_DESC_MIN_WORDS) {
+    return `Use at least ${SHOWCASE_DESC_MIN_WORDS} words (you have ${words}).`
+  }
+  if (len > SHOWCASE_DESC_MAX) {
+    return `Use at most ${SHOWCASE_DESC_MAX} characters.`
+  }
+  if (len < SHOWCASE_DESC_MIN) {
+    return `Use at least ${SHOWCASE_DESC_MIN} characters (you have ${len}).`
+  }
+  return null
+}
+
 export function getShowcaseValidationSignals (input: ShowcaseSubmissionInput): ShowcaseValidationSignals {
   const title = input.title.trim()
   const description = input.description.trim()
@@ -64,7 +87,9 @@ export function getShowcaseValidationSignals (input: ShowcaseSubmissionInput): S
   return {
     titleLengthOk: title.length >= SHOWCASE_TITLE_MIN && title.length <= SHOWCASE_TITLE_MAX,
     descriptionLengthOk: description.length >= SHOWCASE_DESC_MIN && description.length <= SHOWCASE_DESC_MAX,
-    descriptionWordCountOk: countWords(description) >= SHOWCASE_DESC_MIN_WORDS,
+    descriptionWordCountOk:
+      countWords(description) >= SHOWCASE_DESC_MIN_WORDS &&
+      countWords(description) <= SHOWCASE_DESC_MAX_WORDS,
     builderNameLengthOk: builderName.length >= SHOWCASE_NAME_MIN && builderName.length <= SHOWCASE_NAME_MAX,
     projectUrlOk: Boolean(projectUrl) && projectUrl.length <= SHOWCASE_URL_MAX && isHttpUrl(projectUrl),
     repoUrlOk: !repoUrl || (repoUrl.length <= SHOWCASE_URL_MAX && isHttpUrl(repoUrl)),
@@ -80,7 +105,9 @@ export function getBlockingValidationIssues (signals: ShowcaseValidationSignals)
   const issues: string[] = []
   if (!signals.titleLengthOk) issues.push('Title does not meet the required length.')
   if (!signals.descriptionLengthOk) issues.push('Description does not meet the required character length.')
-  if (!signals.descriptionWordCountOk) issues.push('Description needs more detail before review.')
+  if (!signals.descriptionWordCountOk) {
+    issues.push('Description must stay within the allowed word count (see submission guidelines).')
+  }
   if (!signals.builderNameLengthOk) issues.push('Builder name does not meet the required length.')
   if (!signals.projectUrlOk) issues.push('Project URL must be a valid http(s) link.')
   if (!signals.repoUrlOk) issues.push('Repository URL must be a valid http(s) link.')
