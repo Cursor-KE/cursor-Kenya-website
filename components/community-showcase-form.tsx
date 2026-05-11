@@ -137,7 +137,7 @@ export function CommunityShowcaseForm () {
         <Label htmlFor="cs-kind">What kind of build is this?</Label>
         <Select
           required
-          value={projectKind === '' ? undefined : projectKind}
+          value={projectKind}
           onValueChange={(v) => setProjectKind(v as ShowcaseProjectKind)}
         >
           <SelectTrigger id="cs-kind" className="h-9 w-full border-border bg-background/60">
