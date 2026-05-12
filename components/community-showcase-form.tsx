@@ -110,6 +110,7 @@ export function CommunityShowcaseForm () {
       setTitle('')
       setProjectKind('')
       setDescription('')
+      setDescBlurred(false)
       setProjectUrl('')
       setRepoUrl('')
       setBuilderName('')

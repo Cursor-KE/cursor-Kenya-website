@@ -83,13 +83,14 @@ export function getShowcaseValidationSignals (input: ShowcaseSubmissionInput): S
   const repoUrl = input.repoUrl?.trim() ?? ''
   const screenshotUrls = input.screenshotUrls.map((u) => u.trim()).filter(Boolean)
   const uniqueScreenshots = new Set(screenshotUrls)
+  const descriptionWordCount = countWords(description)
 
   return {
     titleLengthOk: title.length >= SHOWCASE_TITLE_MIN && title.length <= SHOWCASE_TITLE_MAX,
     descriptionLengthOk: description.length >= SHOWCASE_DESC_MIN && description.length <= SHOWCASE_DESC_MAX,
     descriptionWordCountOk:
-      countWords(description) >= SHOWCASE_DESC_MIN_WORDS &&
-      countWords(description) <= SHOWCASE_DESC_MAX_WORDS,
+      descriptionWordCount >= SHOWCASE_DESC_MIN_WORDS &&
+      descriptionWordCount <= SHOWCASE_DESC_MAX_WORDS,
     builderNameLengthOk: builderName.length >= SHOWCASE_NAME_MIN && builderName.length <= SHOWCASE_NAME_MAX,
     projectUrlOk: Boolean(projectUrl) && projectUrl.length <= SHOWCASE_URL_MAX && isHttpUrl(projectUrl),
     repoUrlOk: !repoUrl || (repoUrl.length <= SHOWCASE_URL_MAX && isHttpUrl(repoUrl)),

@@ -59,7 +59,7 @@ export function CommunityShowcaseGrid ({
               <Badge variant="outline" className="mb-2 w-fit border-border/80 font-normal text-muted-foreground">
                 {SHOWCASE_PROJECT_KIND_LABELS[normalizeStoredProjectKind(p.projectKind)]}
               </Badge>
-              <h3 className="text-base font-semibold capitalize leading-snug tracking-tight text-foreground transition group-hover:text-primary sm:text-lg">
+              <h3 className="text-base font-semibold leading-snug tracking-tight text-foreground transition group-hover:text-primary sm:text-lg">
                 {p.title}
               </h3>
               <p className="mt-2.5 line-clamp-3 flex-1 text-sm leading-relaxed text-muted-foreground">
