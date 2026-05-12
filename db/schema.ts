@@ -229,6 +229,8 @@ export const communityShowcase = pgTable(
     builderName: text('builder_name').notNull(),
     builderEmail: text('builder_email').notNull(),
     screenshotUrls: jsonb('screenshot_urls').notNull().$type<string[]>(),
+    /** saas | portfolio | open_source | … — see `lib/showcase/project-kind.ts`. */
+    projectKind: text('project_kind').notNull().default('other'),
     status: showcaseStatusEnum('status').notNull().default('pending'),
     featured: boolean('featured').default(false).notNull(),
     sortOrder: integer('sort_order').default(0).notNull(),
@@ -241,6 +243,7 @@ export const communityShowcase = pgTable(
   (t) => [
     index('community_showcase_status_idx').on(t.status),
     index('community_showcase_featured_sort_idx').on(t.featured, t.sortOrder),
+    index('community_showcase_status_project_kind_idx').on(t.status, t.projectKind),
   ]
 )
 

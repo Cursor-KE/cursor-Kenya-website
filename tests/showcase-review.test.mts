@@ -19,6 +19,7 @@ const submission = {
   id: 'showcase_123',
   title: 'Cursor Kenya Hub',
   description: 'A community platform for events, projects, and member highlights.',
+  projectKind: 'other' as const,
   projectUrl: 'https://example.com/demo',
   repoUrl: 'https://github.com/example/repo',
   builderName: 'Ada',

@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { communityShowcase } from '@/db/schema'
+import { SHOWCASE_PROJECT_KIND_LABELS, normalizeStoredProjectKind } from '@/lib/showcase/project-kind'
 
 type Row = typeof communityShowcase.$inferSelect
 
@@ -207,6 +208,9 @@ export function ShowcaseAdminClient ({
                   }
                 >
                   {row.status}
+                </Badge>
+                <Badge variant="outline" className="font-normal">
+                  {SHOWCASE_PROJECT_KIND_LABELS[normalizeStoredProjectKind(row.projectKind)]}
                 </Badge>
               </div>
               <p className="line-clamp-2 text-sm text-muted-foreground">{row.description}</p>
