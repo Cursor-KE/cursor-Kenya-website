@@ -4,15 +4,19 @@ import { desc, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/db'
-import { forms, images, videos } from '@/db/schema'
-import type { FormDefinition } from '@/lib/forms/types'
+import { forms, frameCardSettings, images, videos } from '@/db/schema'
+import { formDefinitionSchema, type FormDefinition } from '@/lib/forms/types'
 import { destroyCloudinaryImageByPublicId } from '@/lib/cloudinary/destroy-image'
+import { normalizeFormSlug } from '@/lib/forms/slug'
 import {
   requireApprovedAdmin,
   SESSION_DB_UNAVAILABLE,
   SESSION_UNAUTHORIZED,
   ADMIN_APPROVAL_REQUIRED,
 } from '@/lib/auth/session'
+
+const FRAME_CARD_SETTINGS_ID = 'default'
+const MAX_FRAME_CARD_TITLE_LENGTH = 80
 
 export type SaveImageRecordResult =
   | { ok: true; id: string }
@@ -123,6 +127,42 @@ export async function deleteVideo (id: string) {
   revalidatePath('/admin/gallery')
 }
 
+export async function saveFrameCardSettings (input: {
+  title: string
+  published: boolean
+}) {
+  await requireApprovedAdmin()
+
+  const title = input.title.trim()
+  if (!title) {
+    throw new Error('Card title is required.')
+  }
+  if (title.length > MAX_FRAME_CARD_TITLE_LENGTH) {
+    throw new Error(`Card title must be ${MAX_FRAME_CARD_TITLE_LENGTH} characters or fewer.`)
+  }
+
+  await db
+    .insert(frameCardSettings)
+    .values({
+      id: FRAME_CARD_SETTINGS_ID,
+      title,
+      published: input.published,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: frameCardSettings.id,
+      set: {
+        title,
+        published: input.published,
+        updatedAt: new Date(),
+      },
+    })
+
+  revalidatePath('/', 'layout')
+  revalidatePath('/admin/frame')
+  revalidatePath('/getyourcard')
+}
+
 /** Swap sort order with the neighbor above or below (list matches public gallery: highest sortOrder first). */
 export async function swapVideoOrder (id: string, direction: 'up' | 'down') {
   await requireApprovedAdmin()
@@ -150,30 +190,79 @@ export async function saveForm (input: {
   definition: FormDefinition
 }) {
   await requireApprovedAdmin()
-  if (input.id) {
-    await db
-      .update(forms)
-      .set({
-        title: input.title,
-        slug: input.slug,
-        status: input.status,
-        definition: input.definition,
-        updatedAt: new Date(),
-      })
-      .where(eq(forms.id, input.id))
+  const title = input.title.trim()
+  if (!title) {
+    throw new Error('Title is required.')
+  }
+
+  const slug = normalizeFormSlug(input.slug)
+  if (!slug) {
+    throw new Error('Slug is required and must contain letters or numbers.')
+  }
+
+  const parsedDefinition = formDefinitionSchema.safeParse(input.definition)
+  if (!parsedDefinition.success) {
+    throw new Error('Form definition is invalid.')
+  }
+
+  const revalidateFormPaths = (id: string, nextSlug: string, previousSlug?: string | null) => {
     revalidatePath('/admin/forms')
-    return { id: input.id }
+    revalidatePath(`/admin/forms/${id}`)
+    revalidatePath(`/forms/${nextSlug}`)
+    if (previousSlug && previousSlug !== nextSlug) {
+      revalidatePath(`/forms/${previousSlug}`)
+    }
+  }
+
+  const isDuplicateSlugError = (error: unknown) => {
+    const code = typeof (error as { code?: unknown } | null)?.code === 'string'
+      ? (error as { code: string }).code
+      : null
+    const message = error instanceof Error ? error.message : String(error)
+    return code === '23505' || /forms_slug_unique|duplicate key/i.test(message)
+  }
+
+  const definition = parsedDefinition.data
+
+  if (input.id) {
+    const currentRows = await db.select({ slug: forms.slug }).from(forms).where(eq(forms.id, input.id)).limit(1)
+    try {
+      await db
+        .update(forms)
+        .set({
+          title,
+          slug,
+          status: input.status,
+          definition,
+          updatedAt: new Date(),
+        })
+        .where(eq(forms.id, input.id))
+    } catch (error) {
+      if (isDuplicateSlugError(error)) {
+        throw new Error('A form with this slug already exists. Choose a different slug.')
+      }
+      throw error
+    }
+    revalidateFormPaths(input.id, slug, currentRows[0]?.slug ?? null)
+    return { id: input.id, slug }
   }
   const id = nanoid()
-  await db.insert(forms).values({
-    id,
-    title: input.title,
-    slug: input.slug,
-    status: input.status,
-    definition: input.definition,
-  })
-  revalidatePath('/admin/forms')
-  return { id }
+  try {
+    await db.insert(forms).values({
+      id,
+      title,
+      slug,
+      status: input.status,
+      definition,
+    })
+  } catch (error) {
+    if (isDuplicateSlugError(error)) {
+      throw new Error('A form with this slug already exists. Choose a different slug.')
+    }
+    throw error
+  }
+  revalidateFormPaths(id, slug)
+  return { id, slug }
 }
 
 export async function deleteForm (id: string) {

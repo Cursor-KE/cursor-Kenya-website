@@ -2,12 +2,44 @@ import 'server-only'
 
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db'
-import { communityShowcase, images, showcaseAiActions, showcaseAiReviews, testimonials, videos } from '@/db/schema'
+import { communityShowcase, frameCardSettings, images, showcaseAiActions, showcaseAiReviews, testimonials, videos } from '@/db/schema'
 import type { ShowcaseSavedReview } from '@/lib/ai/showcase-review-schema'
 import { listCursorKenyaImages } from '@/lib/cloudinary/list-folder-images'
+import {
+  DEFAULT_FRAME_CARD_TITLE,
+  type FrameCardSettings,
+} from '@/lib/frame-card/settings'
 import type { HomeGalleryPhoto } from '@/lib/gallery/types'
 
 export type { HomeGalleryPhoto } from '@/lib/gallery/types'
+
+export async function getFrameCardSettings (): Promise<FrameCardSettings> {
+  try {
+    const rows = await db
+      .select({
+        title: frameCardSettings.title,
+        published: frameCardSettings.published,
+      })
+      .from(frameCardSettings)
+      .where(eq(frameCardSettings.id, 'default'))
+      .limit(1)
+
+    return rows[0] ?? {
+      title: DEFAULT_FRAME_CARD_TITLE,
+      published: false,
+    }
+  } catch {
+    return {
+      title: DEFAULT_FRAME_CARD_TITLE,
+      published: false,
+    }
+  }
+}
+
+export async function getPublishedFrameCardSettings (): Promise<FrameCardSettings | null> {
+  const settings = await getFrameCardSettings()
+  return settings.published ? settings : null
+}
 
 export async function getFeaturedVideos () {
   return db

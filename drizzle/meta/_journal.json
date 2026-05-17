@@ -36,6 +36,20 @@
       "when": 1777000000000,
       "tag": "0004_testimonials",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778880000000,
+      "tag": "0005_frame_card_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778970000000,
+      "tag": "0006_preserve_showcase_project_kind",
+      "breakpoints": true
     }
   ]
 }

@@ -83,11 +83,7 @@ export async function getLumaEvents (): Promise<CommunityEvent[]> {
 
 export async function getNextUpcomingEvent (): Promise<CommunityEvent | null> {
   try {
-    const events = await getLumaEvents()
-    const now = Date.now()
-    const upcoming = events
-      .filter((e) => new Date(e.startAt).getTime() > now)
-      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+    const upcoming = await getUpcomingLumaEvents(1)
     return upcoming[0] ?? null
   } catch (err) {
     console.error('getNextUpcomingEvent', err)
@@ -102,4 +98,18 @@ export async function getLumaEventsSafe (): Promise<CommunityEvent[]> {
     console.error('getLumaEventsSafe', err)
     return []
   }
+}
+
+export async function getUpcomingLumaEvents (limit?: number): Promise<CommunityEvent[]> {
+  const events = await getLumaEvents()
+  const now = Date.now()
+  const upcoming = events
+    .filter((e) => new Date(e.startAt).getTime() > now)
+    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+
+  if (typeof limit === 'number' && limit >= 0) {
+    return upcoming.slice(0, limit)
+  }
+
+  return upcoming
 }

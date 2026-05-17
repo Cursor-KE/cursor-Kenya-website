@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 
 function SortableBlock ({
@@ -74,17 +75,30 @@ function SortableBlock ({
               value={block.type}
               onValueChange={(type) => {
                 const id = block.id
+                const required = block.required ?? false
                 if (type === 'short_text') {
-                  onChange({ id, type: 'short_text', label: block.label, required: false })
+                  onChange({
+                    id,
+                    type: 'short_text',
+                    label: block.label,
+                    required,
+                    placeholder: block.type === 'select' ? '' : block.placeholder ?? '',
+                  })
                 } else if (type === 'long_text') {
-                  onChange({ id, type: 'long_text', label: block.label, required: false })
+                  onChange({
+                    id,
+                    type: 'long_text',
+                    label: block.label,
+                    required,
+                    placeholder: block.type === 'select' ? '' : block.placeholder ?? '',
+                  })
                 } else {
                   onChange({
                     id,
                     type: 'select',
                     label: block.label,
                     options: block.type === 'select' ? block.options : ['Option A', 'Option B'],
-                    required: false,
+                    required,
                   })
                 }
               }}
@@ -98,6 +112,16 @@ function SortableBlock ({
                 <SelectItem value="select">Select</SelectItem>
               </SelectContent>
             </Select>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Switch
+                checked={block.required ?? false}
+                onCheckedChange={(required) =>
+                  onChange({ ...block, required })
+                }
+                size="sm"
+              />
+              Required
+            </label>
             <Button type="button" variant="ghost" size="icon" className="sm:ml-auto" onClick={onRemove}>
               <Trash2 className="h-4 w-4 text-muted-foreground" />
             </Button>

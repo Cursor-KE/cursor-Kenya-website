@@ -1,6 +1,10 @@
 import Link from 'next/link'
 
-export function Footer () {
+export function Footer ({
+  showFrameLink = false,
+}: {
+  showFrameLink?: boolean
+}) {
   return (
     <footer className="border-t border-border/80 bg-background/80 py-12 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-4 sm:flex-row sm:px-6">
@@ -11,6 +15,11 @@ export function Footer () {
           <Link href="/events" className="hover:text-foreground">
             Events
           </Link>
+          {showFrameLink ? (
+            <Link href="/getyourcard" className="hover:text-foreground">
+              Get your card
+            </Link>
+          ) : null}
           <Link href="/gallery" className="hover:text-foreground">
             Gallery
           </Link>

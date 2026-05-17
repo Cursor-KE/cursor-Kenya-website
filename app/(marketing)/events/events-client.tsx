@@ -1,20 +1,26 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { EventCard } from '@/components/event-card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { CommunityEvent } from '@/lib/luma/types'
 
 export function EventsClient ({ events }: { events: CommunityEvent[] }) {
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming')
-  const now = Date.now()
+  const [now, setNow] = useState<number | null>(null)
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setNow(Date.now()))
+    return () => window.cancelAnimationFrame(frame)
+  }, [])
 
   const { upcoming, past } = useMemo(() => {
     const u: CommunityEvent[] = []
     const p: CommunityEvent[] = []
+    const referenceNow = now ?? 0
     for (const e of events) {
       const t = new Date(e.startAt).getTime()
-      if (t > now) u.push(e)
+      if (t > referenceNow) u.push(e)
       else p.push(e)
     }
     u.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())

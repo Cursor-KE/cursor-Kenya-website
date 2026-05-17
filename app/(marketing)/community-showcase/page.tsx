@@ -7,7 +7,7 @@ export const revalidate = 60
 
 export const metadata = {
   title: 'Community showcase | Cursor Kenya',
-  description: 'Projects built with Cursor by the Nairobi community.',
+  description: 'Projects built with Cursor by the Kenya community.',
 }
 
 export default async function CommunityShowcasePage () {

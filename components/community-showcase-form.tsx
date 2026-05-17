@@ -78,7 +78,7 @@ export function CommunityShowcaseForm () {
           onChange={(e) => setTitle(e.target.value)}
           required
           maxLength={200}
-          placeholder="e.g. Nairobi transit map"
+          placeholder="e.g. Kenya transit map"
           className="border-border bg-background/60"
         />
       </div>

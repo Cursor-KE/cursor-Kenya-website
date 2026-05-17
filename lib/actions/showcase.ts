@@ -3,9 +3,16 @@
 import { desc, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 import { requireApprovedAdmin } from '@/lib/auth/session'
 import { db } from '@/db'
 import { communityShowcase } from '@/db/schema'
+import { isShowcaseReviewConfigured } from '@/lib/ai/showcase-review'
+import { runSingleShowcaseReview } from '@/lib/ai/showcase-review-service'
+import {
+  sendShowcaseAiSummary,
+  sendShowcaseSubmissionAck,
+} from '@/lib/email/showcase-submitter'
 import {
   SHOWCASE_DESC_MAX,
   SHOWCASE_DESC_MIN,
@@ -21,6 +28,10 @@ import {
 } from '@/lib/showcase/validation'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function shouldAutoApplySubmitReview () {
+  return process.env.SHOWCASE_SUBMIT_AI_AUTO_APPLY === '1'
+}
 
 export type SubmitShowcaseResult =
   | { ok: true }
@@ -87,9 +98,11 @@ export async function submitCommunityShowcase (input: {
     return { ok: false, message: validationIssues[0] }
   }
 
+  const id = nanoid()
+
   try {
     await db.insert(communityShowcase).values({
-      id: nanoid(),
+      id,
       title,
       description,
       projectUrl,
@@ -108,6 +121,36 @@ export async function submitCommunityShowcase (input: {
       message: 'Could not save your submission. Try again later.',
     }
   }
+
+  await sendShowcaseSubmissionAck({
+    to: builderEmail,
+    builderName,
+    title,
+    showcaseId: id,
+  })
+
+  after(async () => {
+    if (!isShowcaseReviewConfigured()) return
+
+    try {
+      const result = await runSingleShowcaseReview({
+        showcaseId: id,
+        userId: null,
+        autoApply: shouldAutoApplySubmitReview(),
+      })
+      if (!result) return
+
+      await sendShowcaseAiSummary({
+        to: builderEmail,
+        builderName,
+        title,
+        qualityScore: result.review.qualityScore,
+        summary: result.review.summary,
+      })
+    } catch (error) {
+      console.error('[submitCommunityShowcase.after]', error)
+    }
+  })
 
   revalidatePath('/community-showcase')
   revalidatePath('/admin/community-showcase')

@@ -14,7 +14,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 
-const links = [
+const baseLinks = [
   { href: '/', label: 'Home' },
   { href: '/events', label: 'Events' },
   { href: '/gallery', label: 'Gallery' },
@@ -22,9 +22,20 @@ const links = [
   { href: '/about', label: 'About' },
 ]
 
-export function Navbar () {
+export function Navbar ({
+  showFrameLink = false,
+}: {
+  showFrameLink?: boolean
+}) {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const links = showFrameLink
+    ? [
+        ...baseLinks.slice(0, 2),
+        { href: '/getyourcard', label: 'Get your card' },
+        ...baseLinks.slice(2),
+      ]
+    : baseLinks
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/80 bg-background/70 backdrop-blur-xl">

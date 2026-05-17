@@ -1,6 +1,6 @@
 # Cursor Kenya
 
-Next.js site for the Nairobi Cursor and AI-assisted coding community: a public marketing area (home, about, events, gallery, and dynamic forms) plus a password-protected admin for forms, media, and responses.
+Next.js site for the Kenya Cursor and AI-assisted coding community: a public marketing area (home, about, events, gallery, and dynamic forms) plus a password-protected admin for forms, media, and responses.
 
 ## Stack
 
@@ -56,10 +56,20 @@ Use **`pnpm db:probe`** to verify connectivity and pooler/SSL behavior without s
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | For gallery/admin uploads | Cloudinary API credentials. |
 | `CLOUDINARY_UPLOAD_PREFIX` | Optional | Upload folder prefix ([`lib/cloudinary/folder.ts`](lib/cloudinary/folder.ts)). |
 | `LUMA_API_KEY` | Optional | Enables event listings from Luma; without it, events UI degrades gracefully. |
-| `OPENAI_API_KEY` | For admin AI reviews | Enables showcase AI reviews, guarded batch review, and auto-approval plus featuring for qualifying pending submissions. |
+| `OPENAI_API_KEY` | For admin AI features | Enables showcase AI reviews, guarded batch review, auto-approval plus featuring for qualifying pending submissions, and AI form draft generation. |
 | `OPENAI_MODEL` | Optional | Overrides the default OpenAI model used for showcase reviews (`gpt-4o-mini`). |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | For showcase emails | Enables Nodemailer email receipts and AI score summaries for community showcase submitters. Missing SMTP config disables outbound email gracefully. |
+| `SMTP_SECURE` | Optional | Overrides SMTP TLS mode. Defaults to `true` when `SMTP_PORT=465`, otherwise `false`. |
+| `SHOWCASE_SUBMIT_AI_AUTO_APPLY` | Optional | Set to `1` to let submit-triggered AI reviews auto-approve and feature qualifying pending showcase submissions. Defaults to review-only scoring emails. |
 
 **Optional tuning (Neon, SSL, connectivity):** `DATABASE_SSL_STRICT`, `DATABASE_PG_IPV4`, `DATABASE_CONNECT_TIMEOUT` / `PGCONNECT_TIMEOUT`, `DATABASE_PG_MAX`, `DATABASE_CONNECT_TIMEOUT_MS` (migrate script)—see [`drizzle.config.ts`](drizzle.config.ts), [`lib/db/postgres.ts`](lib/db/postgres.ts), and [`scripts/migrate.cjs`](scripts/migrate.cjs).
+
+Showcase email verification:
+
+1. Configure SMTP env vars and `OPENAI_API_KEY`.
+2. Submit a project through `/community-showcase`.
+3. Confirm the submitter receives an acknowledgement email immediately.
+4. Confirm the submitter receives a quality score email after the background AI review completes.
 
 ## Database migrations
 

@@ -34,6 +34,7 @@ export default async function EditFormPage ({
             status: form.status,
             definition,
           }}
+          aiEnabled={Boolean(process.env.OPENAI_API_KEY)}
         />
       </div>
     </AdminPageShell>

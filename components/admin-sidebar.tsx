@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   ImageIcon,
+  IdCard,
   LayoutDashboard,
   FileText,
   ListChecks,
@@ -67,6 +68,7 @@ export function AdminChrome ({
   const items = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/gallery', label: 'Gallery', icon: ImageIcon },
+    { href: '/admin/frame', label: 'Frame Card', icon: IdCard },
     { href: '/admin/community-showcase', label: 'Showcase', icon: Sparkles },
     { href: '/admin/forms', label: 'Forms', icon: FileText },
     { href: '/admin/responses', label: 'Responses', icon: ListChecks },

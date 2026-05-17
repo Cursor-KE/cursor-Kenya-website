@@ -39,3 +39,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.cursor/plans/showcase_nodemailer_+_ai_30017504.plan.md

@@ -7,7 +7,7 @@ import { FeaturedVideosClient } from '@/components/featured-videos-client'
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getNextUpcomingEvent, getLumaEventsSafe } from '@/lib/luma/client'
+import { getNextUpcomingEvent, getUpcomingLumaEvents } from '@/lib/luma/client'
 import { HomeCommunityShowcase } from '@/components/home-community-showcase'
 import { HomeTestimonials } from '@/components/home-testimonials'
 import { getFeaturedVideos, getHomeFeaturedImages } from '@/lib/queries'
@@ -29,11 +29,7 @@ async function HeroCountdown () {
 }
 
 async function EventsStrip () {
-  const all = await getLumaEventsSafe()
-  const now = Date.now()
-  const upcoming = all
-    .filter((e) => new Date(e.startAt).getTime() > now)
-    .slice(0, 3)
+  const upcoming = await getUpcomingLumaEvents(3)
 
   if (upcoming.length === 0) {
     return (
@@ -53,16 +49,16 @@ async function EventsStrip () {
 }
 
 async function FeaturedVideos () {
-  try {
-    const list = await getFeaturedVideos()
-    return <FeaturedVideosClient videos={list} />
-  } catch {
+  const list = await getFeaturedVideos().catch(() => null)
+  if (!list) {
     return (
       <p className="text-center text-sm text-muted-foreground">
         Connect the database to load featured videos.
       </p>
     )
   }
+
+  return <FeaturedVideosClient videos={list} />
 }
 
 async function FeaturedPhotos () {

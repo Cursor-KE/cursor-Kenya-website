@@ -142,6 +142,16 @@ export const videos = pgTable(
   (t) => [index('videos_sort_order_idx').on(t.sortOrder)]
 )
 
+export const frameCardSettings = pgTable('frame_card_settings', {
+  id: text('id').primaryKey().default('default'),
+  title: text('title').notNull().default('/Nairobi Meetup'),
+  published: boolean('published').default(false).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+})
+
 export const formStatusEnum = pgEnum('form_status', ['draft', 'published'])
 
 export const forms = pgTable(
@@ -229,6 +239,7 @@ export const communityShowcase = pgTable(
     builderName: text('builder_name').notNull(),
     builderEmail: text('builder_email').notNull(),
     screenshotUrls: jsonb('screenshot_urls').notNull().$type<string[]>(),
+    projectKind: text('project_kind').notNull().default('other'),
     status: showcaseStatusEnum('status').notNull().default('pending'),
     featured: boolean('featured').default(false).notNull(),
     sortOrder: integer('sort_order').default(0).notNull(),

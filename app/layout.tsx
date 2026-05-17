@@ -21,11 +21,11 @@ export const metadata: Metadata = {
     template: '%s | Cursor Kenya',
   },
   description:
-    'Nairobi developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
+    'Kenya developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
   openGraph: {
     title: 'Cursor Kenya',
     description:
-      'Nairobi developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
+      'Kenya developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
     type: 'website',
     siteName: 'Cursor Kenya',
     images: [
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Cursor Kenya',
     description:
-      'Nairobi developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
+      'Kenya developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
   },
 }
 

@@ -22,9 +22,12 @@ function useRemaining (target: Date | null): Remaining {
   // server/client clock skew and tick-boundary mismatches).
   const [now, setNow] = useState<number | null>(null)
   useEffect(() => {
-    setNow(Date.now())
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
+    const frame = window.requestAnimationFrame(() => setNow(Date.now()))
+    const t = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.clearInterval(t)
+    }
   }, [])
   return useMemo(() => {
     if (!target) return null
