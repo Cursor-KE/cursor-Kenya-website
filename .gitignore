@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .cursor/plans/showcase_nodemailer_+_ai_30017504.plan.md
+
+# Sentry Config File
+.env.sentry-build-plugin
