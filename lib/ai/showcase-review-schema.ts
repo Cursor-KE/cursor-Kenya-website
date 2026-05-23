@@ -3,7 +3,11 @@ import type { ShowcaseReviewPolicyOutcome, ShowcaseValidationSignals } from '@/d
 
 export const showcaseReviewResultSchema = z.object({
   summary: z.string().trim().min(1).max(500),
+  projectOverview: z.string().trim().min(1).max(700),
+  featureHighlights: z.array(z.string().trim().min(1).max(180)).min(1).max(6),
+  repositoryUrl: z.string().trim().min(1).max(500),
   qualityScore: z.number().int().min(1).max(10),
+  scoreRationale: z.string().trim().min(1).max(900),
   recommendation: z.enum(['approve', 'reject', 'needs_manual_review']),
   featuredSuggestion: z.object({
     shouldFeature: z.boolean(),
@@ -57,7 +61,11 @@ export const showcaseReviewJsonSchema = {
   additionalProperties: false,
   required: [
     'summary',
+    'projectOverview',
+    'featureHighlights',
+    'repositoryUrl',
     'qualityScore',
+    'scoreRationale',
     'recommendation',
     'featuredSuggestion',
     'riskFlags',
@@ -65,7 +73,16 @@ export const showcaseReviewJsonSchema = {
   ],
   properties: {
     summary: { type: 'string' },
+    projectOverview: { type: 'string' },
+    featureHighlights: {
+      type: 'array',
+      items: { type: 'string' },
+      minItems: 1,
+      maxItems: 6,
+    },
+    repositoryUrl: { type: 'string' },
     qualityScore: { type: 'integer', minimum: 1, maximum: 10 },
+    scoreRationale: { type: 'string' },
     recommendation: {
       type: 'string',
       enum: ['approve', 'reject', 'needs_manual_review'],

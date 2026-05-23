@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { AlertTriangle, Bot, ChevronDown, ChevronUp, ShieldCheck, Sparkles, Trash2 } from 'lucide-react'
+import { AlertTriangle, Bot, ChevronDown, ChevronUp, ExternalLink, ShieldCheck, Sparkles, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   deleteShowcase,
@@ -47,6 +47,11 @@ function signalSummary (review: ShowcaseSavedReview) {
   if (!signals.screenshotCountOk) issues.push('Screenshots')
   if (signals.duplicateScreenshots) issues.push('Duplicate screenshots')
   return issues
+}
+
+function repositoryUrlForReview (review: ShowcaseSavedReview, row: Row) {
+  const url = review.review.repositoryUrl?.trim() || row.repoUrl?.trim() || ''
+  return url && url.toLowerCase() !== 'not provided' ? url : null
 }
 
 export function ShowcaseAdminClient ({
@@ -336,6 +341,54 @@ export function ShowcaseAdminClient ({
                     <CardDescription>{reviews[row.id].review.summary}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                        Project overview
+                      </p>
+                      <p className="mt-1 text-sm text-foreground/90">
+                        {reviews[row.id].review.projectOverview || reviews[row.id].review.summary}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                        Feature highlights
+                      </p>
+                      {(reviews[row.id].review.featureHighlights ?? []).length === 0 ? (
+                        <p className="mt-1 text-sm text-foreground/90">No feature highlights were captured in this review.</p>
+                      ) : (
+                        <ul className="mt-1 space-y-1 text-sm text-foreground/90">
+                          {reviews[row.id].review.featureHighlights.map((feature) => (
+                            <li key={feature}>• {feature}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                        Repository
+                      </p>
+                      {repositoryUrlForReview(reviews[row.id], row) ? (
+                        <a
+                          href={repositoryUrlForReview(reviews[row.id], row) ?? undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-1 inline-flex items-center gap-1.5 break-all text-sm font-medium text-primary hover:underline"
+                        >
+                          {repositoryUrlForReview(reviews[row.id], row)}
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                        </a>
+                      ) : (
+                        <p className="mt-1 text-sm text-foreground/90">No repository URL was provided.</p>
+                      )}
+                    </div>
+                    <div className="rounded-lg border border-border/70 bg-muted/30 px-3 py-2">
+                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                        Score rationale
+                      </p>
+                      <p className="mt-1 text-sm text-foreground/90">
+                        {reviews[row.id].review.scoreRationale || reviews[row.id].review.moderationNotes}
+                      </p>
+                    </div>
                     <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
                       <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
                         Validation checks

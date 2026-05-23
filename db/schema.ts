@@ -274,7 +274,11 @@ export type ShowcaseReviewPolicyOutcome = {
 
 export type ShowcaseAiReviewPayload = {
   summary: string
+  projectOverview: string
+  featureHighlights: string[]
+  repositoryUrl: string
   qualityScore: number
+  scoreRationale: string
   recommendation: 'approve' | 'reject' | 'needs_manual_review'
   featuredSuggestion: {
     shouldFeature: boolean

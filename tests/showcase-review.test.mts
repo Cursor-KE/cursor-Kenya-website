@@ -31,7 +31,15 @@ const submission = {
 
 const review = {
   summary: 'A concise community-focused project with enough context to understand the submission.',
+  projectOverview: 'Cursor Kenya Hub is a community platform for events, project showcases, and member highlights.',
+  featureHighlights: [
+    'Community event listings',
+    'Project showcase pages',
+    'Member highlight content',
+  ],
+  repositoryUrl: 'https://github.com/example/repo',
   qualityScore: 8,
+  scoreRationale: 'The score is 8 because Cursor Kenya Hub clearly describes events, project showcases, and member highlights, includes a valid project URL, repository URL, and two screenshots, and passes validation. It is not higher because the submitted description is concise and does not provide deeper workflow or implementation details.',
   recommendation: 'approve' as const,
   featuredSuggestion: {
     shouldFeature: true,
@@ -69,12 +77,19 @@ const savedReview = {
 test('showcase review schema accepts a valid review payload', () => {
   const parsed = showcaseReviewResultSchema.parse(review)
   assert.equal(parsed.qualityScore, 8)
+  assert.equal(parsed.repositoryUrl, submission.repoUrl)
+  assert.match(parsed.scoreRationale, /events, project showcases, and member highlights/)
 })
 
 test('prompt builder includes the grounding instructions and submission data', () => {
   const prompt = buildShowcaseReviewPrompt(submission, savedReview.validationSignals)
   assert.match(prompt, /Judge only from the submission data below/)
   assert.match(prompt, /valid repository URL is required/)
+  assert.match(prompt, /hackathon judge/)
+  assert.match(prompt, /highlight the project features/)
+  assert.match(prompt, /repositoryUrl/)
+  assert.match(prompt, /scoreRationale/)
+  assert.match(prompt, /what earned points and what held the score back/)
   assert.match(prompt, /Validation signals/)
   assert.match(prompt, /Cursor Kenya Hub/)
   assert.match(prompt, /https:\/\/github.com\/example\/repo/)
@@ -108,9 +123,14 @@ test('validation signals and policy allow only strong low-risk auto-approval', (
   const blocked = evaluateShowcasePolicy({
     status: 'pending',
     validationSignals: savedReview.validationSignals,
-    review,
+    review: {
+      ...review,
+      recommendation: 'needs_manual_review',
+      riskFlags: [],
+    },
   })
   assert.equal(blocked.decisionMode, 'manual_review')
+  assert.deepEqual(blocked.reasons, ['AI recommendation requires manual review.'])
 })
 
 test('structured output extractor prefers output_text and rejects refusals', () => {

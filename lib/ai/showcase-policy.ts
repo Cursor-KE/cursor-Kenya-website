@@ -20,7 +20,12 @@ export function evaluateShowcasePolicy (input: {
   if (!input.validationSignals.repoUrlOk) reasons.push('Repository URL failed validation.')
   if (!input.validationSignals.screenshotCountOk) reasons.push('Screenshots failed validation.')
   if (input.validationSignals.duplicateScreenshots) reasons.push('Duplicate screenshots were submitted.')
-  if (input.review.recommendation !== 'approve') reasons.push('AI did not recommend approval.')
+  if (input.review.recommendation === 'needs_manual_review') {
+    reasons.push('AI recommendation requires manual review.')
+  }
+  if (input.review.recommendation === 'reject') {
+    reasons.push('AI recommended rejection.')
+  }
   if (input.review.qualityScore < 5) reasons.push('Quality score is below the auto-approve-and-feature threshold.')
   if (input.review.riskFlags.length > 0) reasons.push('Risk flags require manual review.')
 
