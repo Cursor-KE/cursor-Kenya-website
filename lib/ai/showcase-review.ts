@@ -22,7 +22,7 @@ export type ShowcaseReviewSubmission = Pick<
 >
 
 const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini'
-export const SHOWCASE_REVIEW_PROMPT_VERSION = 'showcase-review-v3'
+export const SHOWCASE_REVIEW_PROMPT_VERSION = 'showcase-review-v4'
 
 export class ShowcaseReviewConfigError extends Error {}
 export class ShowcaseReviewOutputError extends Error {}
@@ -45,6 +45,7 @@ export function buildShowcaseReviewPrompt (
     'Judge only from the submission data below.',
     'Do not browse links, infer hidden product quality, or invent missing facts.',
     'If evidence is limited or mixed, use needs_manual_review.',
+    'A valid repository URL is required for approval; missing or invalid repository evidence must stay in manual review.',
     'Optimize for staff moderation notes, not applicant-facing language.',
     'Treat the validation signals as objective checks and keep them separate from subjective judgment.',
     '',

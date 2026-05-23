@@ -67,7 +67,7 @@ export function getShowcaseValidationSignals (input: ShowcaseSubmissionInput): S
     descriptionWordCountOk: countWords(description) >= SHOWCASE_DESC_MIN_WORDS,
     builderNameLengthOk: builderName.length >= SHOWCASE_NAME_MIN && builderName.length <= SHOWCASE_NAME_MAX,
     projectUrlOk: Boolean(projectUrl) && projectUrl.length <= SHOWCASE_URL_MAX && isHttpUrl(projectUrl),
-    repoUrlOk: !repoUrl || (repoUrl.length <= SHOWCASE_URL_MAX && isHttpUrl(repoUrl)),
+    repoUrlOk: Boolean(repoUrl) && repoUrl.length <= SHOWCASE_URL_MAX && isHttpUrl(repoUrl),
     screenshotCountOk:
       screenshotUrls.length >= SHOWCASE_SCREENSHOT_MIN &&
       screenshotUrls.length <= SHOWCASE_SCREENSHOT_MAX &&
@@ -83,7 +83,7 @@ export function getBlockingValidationIssues (signals: ShowcaseValidationSignals)
   if (!signals.descriptionWordCountOk) issues.push('Description needs more detail before review.')
   if (!signals.builderNameLengthOk) issues.push('Builder name does not meet the required length.')
   if (!signals.projectUrlOk) issues.push('Project URL must be a valid http(s) link.')
-  if (!signals.repoUrlOk) issues.push('Repository URL must be a valid http(s) link.')
+  if (!signals.repoUrlOk) issues.push('Repository URL is required and must be a valid http(s) link.')
   if (!signals.screenshotCountOk) issues.push('Screenshot set must include 2 to 8 valid https URLs.')
   if (signals.duplicateScreenshots) issues.push('Screenshot URLs must be unique.')
   return issues

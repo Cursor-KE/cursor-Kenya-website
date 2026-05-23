@@ -83,7 +83,7 @@ export function CommunityShowcaseForm () {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="cs-desc">What did you build with Cursor?</Label>
+        <Label htmlFor="cs-desc">What did you build with Cursor, Codex, or Claude?</Label>
         <Textarea
           id="cs-desc"
           value={description}
@@ -91,7 +91,7 @@ export function CommunityShowcaseForm () {
           required
           rows={5}
           maxLength={8000}
-          placeholder="Short description of the project and how Cursor helped."
+          placeholder="Short description of the project and how Cursor, Codex, or Claude helped."
           className="border-border bg-background/60"
         />
       </div>
@@ -109,12 +109,13 @@ export function CommunityShowcaseForm () {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="cs-repo">Repository (optional)</Label>
+          <Label htmlFor="cs-repo">Repository</Label>
           <Input
             id="cs-repo"
             type="url"
             value={repoUrl}
             onChange={(e) => setRepoUrl(e.target.value)}
+            required
             placeholder="https://github.com/..."
             className="border-border bg-background/60"
           />

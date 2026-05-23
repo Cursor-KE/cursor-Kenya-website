@@ -74,6 +74,7 @@ test('showcase review schema accepts a valid review payload', () => {
 test('prompt builder includes the grounding instructions and submission data', () => {
   const prompt = buildShowcaseReviewPrompt(submission, savedReview.validationSignals)
   assert.match(prompt, /Judge only from the submission data below/)
+  assert.match(prompt, /valid repository URL is required/)
   assert.match(prompt, /Validation signals/)
   assert.match(prompt, /Cursor Kenya Hub/)
   assert.match(prompt, /https:\/\/github.com\/example\/repo/)
@@ -90,6 +91,7 @@ test('validation signals and policy allow only strong low-risk auto-approval', (
   })
   assert.equal(weakSignals.titleLengthOk, false)
   assert.equal(weakSignals.descriptionWordCountOk, false)
+  assert.equal(weakSignals.repoUrlOk, false)
 
   const autoApproved = evaluateShowcasePolicy({
     status: 'pending',

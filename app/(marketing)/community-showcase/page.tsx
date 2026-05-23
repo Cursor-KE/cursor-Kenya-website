@@ -7,7 +7,7 @@ export const revalidate = 60
 
 export const metadata = {
   title: 'Community showcase | Cursor Kenya',
-  description: 'Projects built with Cursor by the Kenya community.',
+  description: 'Projects built with Cursor, Codex, and Claude by the Kenya community.',
 }
 
 export default async function CommunityShowcasePage () {
@@ -26,14 +26,14 @@ export default async function CommunityShowcasePage () {
             Community showcase
           </h1>
           <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
-            Share something you shipped with Cursor. Submissions are reviewed before they appear below.
+            Share something you shipped with Cursor, Codex, or Claude. Submissions are reviewed before they appear below.
           </p>
         </FadeIn>
 
         <section className="mt-12 rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-md sm:p-8">
           <h2 className="text-lg font-semibold text-foreground">Submit your project</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Include at least two screenshots and a link to a live demo or product page.
+            Include at least two screenshots, a live demo or product page, and a repository link.
           </p>
           <div className="mt-8">
             <CommunityShowcaseForm />

@@ -75,7 +75,7 @@ export async function submitCommunityShowcase (input: {
     return { ok: false, message: 'Enter a valid http(s) project or demo URL.' }
   }
   if (!signals.repoUrlOk) {
-    return { ok: false, message: 'Repository URL must be a valid http(s) link.' }
+    return { ok: false, message: 'Repository URL is required and must be a valid http(s) link.' }
   }
   if (!signals.builderNameLengthOk) {
     return { ok: false, message: `Your name must be ${SHOWCASE_NAME_MIN}-${SHOWCASE_NAME_MAX} characters.` }

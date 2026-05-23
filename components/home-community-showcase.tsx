@@ -24,7 +24,7 @@ export async function HomeCommunityShowcase () {
             <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               Community showcase
             </h2>
-            <p className="mt-2 text-muted-foreground">Shipped with Cursor by builders in Kenya.</p>
+            <p className="mt-2 text-muted-foreground">Shipped with Cursor, Codex, or Claude by builders in Kenya.</p>
           </div>
           <Link
             href="/community-showcase"
