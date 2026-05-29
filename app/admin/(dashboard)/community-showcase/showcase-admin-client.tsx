@@ -23,9 +23,19 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
+import { cn } from '@/lib/utils'
 import { communityShowcase } from '@/db/schema'
 
 type Row = typeof communityShowcase.$inferSelect
+type StatusFilter = 'all' | 'pending' | 'approved' | 'rejected'
+type SubmissionStatus = Exclude<StatusFilter, 'all'>
+
+const statusFilterOptions: Array<{ value: StatusFilter; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'rejected', label: 'Rejected' },
+]
 
 function recommendationVariant (
   recommendation: ShowcaseReviewResult['recommendation']
@@ -69,6 +79,17 @@ export function ShowcaseAdminClient ({
   const [batchReviewing, setBatchReviewing] = useState(false)
   const [reviews, setReviews] = useState<Record<string, ShowcaseSavedReview>>(initialReviews)
   const [reviewErrors, setReviewErrors] = useState<Record<string, string>>({})
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const statusCounts = rows.reduce<Record<SubmissionStatus, number>>(
+    (counts, row) => {
+      counts[row.status] += 1
+      return counts
+    },
+    { pending: 0, approved: 0, rejected: 0 }
+  )
+  const totalRows = rows.length
+  const filteredRows = statusFilter === 'all' ? rows : rows.filter((row) => row.status === statusFilter)
+  const rowOrderIndexById = new Map(rows.map((row, index) => [row.id, index]))
 
   async function run (id: string, fn: () => Promise<void>) {
     setBusyId(id)
@@ -176,11 +197,47 @@ export function ShowcaseAdminClient ({
           </Button>
         </div>
       ) : null}
+      <div className="flex flex-wrap gap-2" aria-label="Filter showcase submissions by status">
+        {statusFilterOptions.map((option) => {
+          const count = option.value === 'all' ? totalRows : statusCounts[option.value]
+          const isActive = statusFilter === option.value
+
+          return (
+            <Button
+              key={option.value}
+              type="button"
+              size="sm"
+              variant={isActive ? 'default' : 'outline'}
+              className={cn(
+                'h-auto justify-between gap-3 rounded-full px-3 py-2 text-xs',
+                isActive && 'ring-2 ring-ring ring-offset-2 ring-offset-background'
+              )}
+              aria-pressed={isActive}
+              onClick={() => setStatusFilter(option.value)}
+            >
+              <span>{option.label}</span>
+              <span
+                className={cn(
+                  'rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                  isActive ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
+                )}
+              >
+                {count}
+              </span>
+            </Button>
+          )
+        })}
+      </div>
       <ul className="space-y-3">
-      {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No submissions yet.</p>
-      ) : (
-        rows.map((row, i) => (
+        {rows.length === 0 ? (
+          <li className="text-sm text-muted-foreground">No submissions yet.</li>
+        ) : filteredRows.length === 0 ? (
+          <li className="text-sm text-muted-foreground">No submissions match this filter.</li>
+        ) : (
+          filteredRows.map((row) => {
+            const rowOrderIndex = rowOrderIndexById.get(row.id) ?? 0
+
+            return (
           <li
             key={row.id}
             className="grid gap-4 rounded-xl border border-border bg-card/50 p-4 xl:grid-cols-[minmax(0,1fr)_auto]"
@@ -483,7 +540,7 @@ export function ShowcaseAdminClient ({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                disabled={i === 0 || busyId !== null}
+                disabled={rowOrderIndex === 0 || busyId !== null}
                 aria-label="Move up"
                 onClick={() =>
                   run(row.id, async () => {
@@ -498,7 +555,7 @@ export function ShowcaseAdminClient ({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                disabled={i === rows.length - 1 || busyId !== null}
+                disabled={rowOrderIndex === rows.length - 1 || busyId !== null}
                 aria-label="Move down"
                 onClick={() =>
                   run(row.id, async () => {
@@ -526,8 +583,9 @@ export function ShowcaseAdminClient ({
               </Button>
             </div>
           </li>
-        ))
-      )}
+            )
+          })
+        )}
       </ul>
     </>
   )
