@@ -46,7 +46,7 @@ const validModelDraft = {
       placeholder: 'Share your goals',
     },
   ],
-}
+} satisfies Parameters<typeof finalizeGeneratedFormDraft>[0]
 
 function restoreGlobals () {
   globalThis.fetch = originalFetch
