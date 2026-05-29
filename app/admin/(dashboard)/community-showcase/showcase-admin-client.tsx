@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { AlertTriangle, Bot, ChevronDown, ChevronUp, ExternalLink, ShieldCheck, Sparkles, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -15,6 +15,14 @@ import type { ShowcaseSavedReview, ShowcaseReviewResult } from '@/lib/ai/showcas
 import { cloudinaryScaledUrl } from '@/lib/cloudinary/delivery-url'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Card,
   CardContent,
@@ -69,6 +77,8 @@ export function ShowcaseAdminClient ({
   const [batchReviewing, setBatchReviewing] = useState(false)
   const [reviews, setReviews] = useState<Record<string, ShowcaseSavedReview>>(initialReviews)
   const [reviewErrors, setReviewErrors] = useState<Record<string, string>>({})
+  const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null)
+  const deleteButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
   async function run (id: string, fn: () => Promise<void>) {
     setBusyId(id)
@@ -80,6 +90,17 @@ export function ShowcaseAdminClient ({
     } finally {
       setBusyId(null)
     }
+  }
+
+  function restoreDeleteFocus (id: string) {
+    window.setTimeout(() => {
+      deleteButtonRefs.current[id]?.focus()
+    }, 0)
+  }
+
+  function closeDeleteDialog (id: string) {
+    setDeleteDialogId(null)
+    restoreDeleteFocus(id)
   }
 
   async function reviewWithAi (id: string, autoApply = false) {
@@ -508,22 +529,67 @@ export function ShowcaseAdminClient ({
               >
                 <ChevronDown className="h-4 w-4" />
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive hover:text-destructive"
-                disabled={busyId !== null}
-                aria-label="Delete"
-                onClick={() =>
-                  run(row.id, async () => {
-                    await deleteShowcase(row.id)
-                    toast.success('Deleted')
-                  })
-                }
+              <Dialog
+                open={deleteDialogId === row.id}
+                onOpenChange={(open) => {
+                  if (open) {
+                    setDeleteDialogId(row.id)
+                    return
+                  }
+                  closeDeleteDialog(row.id)
+                }}
               >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+                <Button
+                  ref={(node) => {
+                    deleteButtonRefs.current[row.id] = node
+                  }}
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                  disabled={busyId !== null}
+                  aria-label={`Delete ${row.title || 'showcase project'}`}
+                  aria-haspopup="dialog"
+                  aria-expanded={deleteDialogId === row.id}
+                  onClick={() => setDeleteDialogId(row.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                <DialogContent showCloseButton={false}>
+                  <DialogHeader>
+                    <DialogTitle>
+                      {row.title.trim() ? `Delete ‘${row.title.trim()}’?` : 'Delete this project?'}
+                    </DialogTitle>
+                    <DialogDescription>
+                      This permanently removes the showcase submission and its display order from the site.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={busyId !== null}
+                      onClick={() => closeDeleteDialog(row.id)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={busyId !== null}
+                      onClick={() => {
+                        setDeleteDialogId(null)
+                        run(row.id, async () => {
+                          await deleteShowcase(row.id)
+                          toast.success('Deleted')
+                        })
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </li>
         ))
