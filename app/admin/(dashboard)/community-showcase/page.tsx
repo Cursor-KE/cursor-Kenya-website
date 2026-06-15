@@ -2,14 +2,28 @@ import { ShowcaseAdminClient } from '@/app/admin/(dashboard)/community-showcase/
 import { AdminPageShell } from '@/components/admin-page-shell'
 import { getAllCommunityShowcaseForAdmin, getLatestShowcaseAiReviewsForAdmin } from '@/lib/queries'
 
+const ADMIN_SHOWCASE_QUERY_TIMEOUT_MS = 12_000
+
+function withTimeout<T> (promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error('Community showcase admin query timed out.')), timeoutMs)
+    }),
+  ])
+}
+
 export default async function AdminCommunityShowcasePage () {
   let rows: Awaited<ReturnType<typeof getAllCommunityShowcaseForAdmin>> = []
   let initialReviews: Awaited<ReturnType<typeof getLatestShowcaseAiReviewsForAdmin>> = {}
   try {
-    ;[rows, initialReviews] = await Promise.all([
-      getAllCommunityShowcaseForAdmin(),
-      getLatestShowcaseAiReviewsForAdmin(),
-    ])
+    ;[rows, initialReviews] = await withTimeout(
+      Promise.all([
+        getAllCommunityShowcaseForAdmin(),
+        getLatestShowcaseAiReviewsForAdmin(),
+      ]),
+      ADMIN_SHOWCASE_QUERY_TIMEOUT_MS
+    )
   } catch {
     // database unavailable
   }

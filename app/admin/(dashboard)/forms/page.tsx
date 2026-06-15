@@ -1,12 +1,20 @@
 import Link from 'next/link'
 import { desc } from 'drizzle-orm'
-import { Plus } from 'lucide-react'
+import { ArrowUpRight, FileText, Plus } from 'lucide-react'
 import { db } from '@/db'
 import { forms } from '@/db/schema'
 import { AdminPageShell } from '@/components/admin-page-shell'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 
 export default async function AdminFormsListPage () {
   const rows = await db.select().from(forms).orderBy(desc(forms.updatedAt))
@@ -20,34 +28,55 @@ export default async function AdminFormsListPage () {
           href="/admin/forms/new"
           className={cn(
             buttonVariants(),
-            'w-full bg-gradient-to-r from-primary to-primary-end text-primary-foreground sm:w-auto'
+            'w-full shadow-[0_16px_48px_var(--glow)] sm:w-auto'
           )}
         >
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus data-icon="inline-start" />
           New form
         </Link>
       )}
     >
-      <ul className="space-y-3">
-        {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No forms yet.</p>
-        ) : (
-          rows.map((f) => (
-            <li key={f.id}>
-              <Link
-                href={`/admin/forms/${f.id}`}
-                className="flex flex-col gap-3 rounded-xl border border-border bg-card/50 px-4 py-4 transition hover:border-primary/40 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <span className="break-words font-medium text-foreground">{f.title}</span>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={f.status === 'published' ? 'default' : 'secondary'}>{f.status}</Badge>
-                  <span className="break-all text-xs text-muted-foreground">/{f.slug}</span>
-                </div>
-              </Link>
-            </li>
-          ))
-        )}
-      </ul>
+      <Card className="border-border/70 bg-card/60 backdrop-blur">
+        <CardHeader>
+          <CardAction>
+            <Badge variant="outline">{rows.length} total</Badge>
+          </CardAction>
+          <CardTitle>Form inventory</CardTitle>
+          <CardDescription>Manage public URLs, publish state, and builder drafts.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="flex flex-col gap-3">
+            {rows.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border bg-background/45 px-4 py-10 text-center text-sm text-muted-foreground">
+                No forms yet.
+              </p>
+            ) : (
+              rows.map((f) => (
+                <li key={f.id}>
+                  <Link
+                    href={`/admin/forms/${f.id}`}
+                    className="group flex flex-col gap-3 rounded-xl border border-border/60 bg-background/45 px-4 py-4 transition-colors hover:border-primary/40 hover:bg-background/70 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-primary">
+                        <FileText />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block break-words font-medium text-foreground">{f.title}</span>
+                        <span className="block break-all text-xs text-muted-foreground">/{f.slug}</span>
+                      </span>
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={f.status === 'published' ? 'default' : 'secondary'}>{f.status}</Badge>
+                      <ArrowUpRight className="text-muted-foreground transition-colors group-hover:text-primary" />
+                    </div>
+                  </Link>
+                </li>
+              ))
+            )}
+          </ul>
+        </CardContent>
+      </Card>
     </AdminPageShell>
   )
 }

@@ -20,7 +20,7 @@ export function AuthSignOutButton ({
         window.location.href = '/admin/login'
       }}
     >
-      <LogOut className="mr-2 h-4 w-4" />
+      <LogOut data-icon="inline-start" />
       Sign out
     </Button>
   )
