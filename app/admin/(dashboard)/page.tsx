@@ -2,8 +2,10 @@ import { desc, eq, sql } from 'drizzle-orm'
 import Link from 'next/link'
 import {
   ArrowUpRight,
+  Clock3,
   FileText,
   ImageIcon,
+  Inbox,
   ListChecks,
   ShieldCheck,
   Video,
@@ -23,6 +25,14 @@ import { db } from '@/db'
 import { formResponses, forms, images, user, videos } from '@/db/schema'
 import { requireApprovedAdmin } from '@/lib/auth/session'
 
+const responseDateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
 export default async function AdminDashboardPage () {
   const currentUser = await requireApprovedAdmin()
 
@@ -35,8 +45,14 @@ export default async function AdminDashboardPage () {
         (SELECT COUNT(*)::int FROM ${formResponses}) AS resp_c
     `),
     db
-      .select()
+      .select({
+        id: formResponses.id,
+        formId: formResponses.formId,
+        formTitle: forms.title,
+        createdAt: formResponses.createdAt,
+      })
       .from(formResponses)
+      .leftJoin(forms, eq(formResponses.formId, forms.id))
       .orderBy(desc(formResponses.createdAt))
       .limit(5),
     currentUser.user.role === 'super_user'
@@ -123,41 +139,71 @@ export default async function AdminDashboardPage () {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <Card className="border-border/70 bg-card/60 backdrop-blur">
-          <CardHeader>
+        <Card className="relative border-border/70 bg-card/70 shadow-[0_24px_80px_rgb(0_0_0/0.12)] backdrop-blur">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <CardHeader className="gap-2 pb-1">
             <CardAction>
-              <Badge variant="outline">{recent.length} latest</Badge>
+              <Badge variant="outline" className="bg-background/45">
+                {recent.length} latest
+              </Badge>
             </CardAction>
-            <CardTitle>Recent responses</CardTitle>
-            <CardDescription>Fresh submissions ordered by arrival time.</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <span className="flex size-8 items-center justify-center rounded-lg border border-border/70 bg-background/45 text-primary">
+                <ListChecks className="size-4" />
+              </span>
+              Recent responses
+            </CardTitle>
+            <CardDescription>
+              Fresh submissions ordered by arrival time.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-1">
             {recent.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border bg-background/45 px-4 py-10 text-center text-sm text-muted-foreground">
-                No submissions yet.
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/80 bg-background/45 px-4 py-12 text-center">
+                <span className="mb-3 flex size-11 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground">
+                  <Inbox className="size-5" />
+                </span>
+                <p className="text-sm font-medium text-foreground">No submissions yet</p>
+                <p className="mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
+                  New form responses will appear here as soon as attendees submit them.
+                </p>
               </div>
             ) : (
-              <ul className="flex flex-col gap-2">
+              <ul className="flex flex-col gap-2.5">
                 {recent.map((r, index) => (
                   <li key={r.id}>
                     <Link
                       href={`/admin/responses/${r.id}`}
-                      className="group/row flex flex-col gap-3 rounded-xl border border-border/60 bg-background/45 px-4 py-3 text-sm transition-colors hover:border-primary/40 hover:bg-background/70 sm:flex-row sm:items-center sm:justify-between"
+                      className="group/row grid gap-3 rounded-xl border border-border/60 bg-background/45 p-3.5 text-sm outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/35 hover:bg-background/75 hover:shadow-[0_14px_40px_rgb(0_0_0/0.16)] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
                     >
-                      <span className="flex min-w-0 items-center gap-3">
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-xs font-medium tabular-nums text-muted-foreground">
-                          {index + 1}
+                      <span className="flex min-w-0 items-center gap-3.5">
+                        <span className="relative flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-card text-xs font-semibold tabular-nums text-muted-foreground transition-colors group-hover/row:border-primary/30 group-hover/row:text-primary">
+                          <span className="absolute -right-1 -top-1 size-2.5 rounded-full border border-card bg-primary/80" />
+                          {String(index + 1).padStart(2, '0')}
                         </span>
-                        <span className="min-w-0">
-                          <span className="block truncate font-mono text-xs text-foreground/85">
-                            {r.formId.slice(0, 8)}
+                        <span className="min-w-0 space-y-1">
+                          <span className="block truncate font-medium text-foreground">
+                            {r.formTitle ?? 'Untitled form'}
                           </span>
-                          <span className="block text-xs text-muted-foreground">Form response</span>
+                          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                            <span>Form response</span>
+                            <span aria-hidden="true" className="text-muted-foreground/45">/</span>
+                            <span className="font-mono text-[11px] text-muted-foreground/80">
+                              {r.formId.slice(0, 8)}
+                            </span>
+                          </span>
                         </span>
                       </span>
-                      <span className="flex items-center gap-3 text-xs text-muted-foreground">
-                        {new Date(r.createdAt).toLocaleString()}
-                        <ArrowUpRight className="transition-colors group-hover/row:text-primary" />
+                      <span className="flex items-center justify-between gap-3 text-xs text-muted-foreground sm:justify-end">
+                        <span className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border/60 bg-card/70 px-2.5 py-1">
+                          <Clock3 className="size-3.5" />
+                          <time dateTime={r.createdAt.toISOString()}>
+                            {responseDateFormatter.format(r.createdAt)}
+                          </time>
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg border border-border/70 bg-card text-muted-foreground transition-colors group-hover/row:border-primary/30 group-hover/row:text-primary">
+                          <ArrowUpRight className="size-4" />
+                        </span>
                       </span>
                     </Link>
                   </li>
