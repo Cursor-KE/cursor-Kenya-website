@@ -11,7 +11,7 @@ Next.js site for the Kenya Cursor and AI-assisted coding community: a public mar
 | Database | [PostgreSQL](https://www.postgresql.org) via [Drizzle ORM](https://orm.drizzle.team) and [`postgres`](https://github.com/porsager/postgres) ([`lib/db/postgres.ts`](lib/db/postgres.ts)) |
 | Auth | [Better Auth](https://www.better-auth.com) with Drizzle adapter ([`lib/auth.ts`](lib/auth.ts), [`app/api/auth/[...all]/route.ts`](app/api/auth/[...all]/route.ts)) |
 | Media | [Cloudinary](https://cloudinary.com) for signed uploads and folder listing ([`app/api/cloudinary/sign/route.ts`](app/api/cloudinary/sign/route.ts)) |
-| Events | [Luma](https://lu.ma) public API when `LUMA_API_KEY` is set ([`lib/luma/client.ts`](lib/luma/client.ts)) |
+| Events | [Luma](https://lu.ma) public API plus optional webhooks when `LUMA_API_KEY` is set ([`lib/luma/client.ts`](lib/luma/client.ts), [`app/webhook/route.ts`](app/webhook/route.ts)) |
 
 ## Features
 
@@ -55,7 +55,11 @@ Use **`pnpm db:probe`** to verify connectivity and pooler/SSL behavior without s
 | `NEXT_PUBLIC_APP_URL` | Recommended | Canonical site URL for metadata and the auth client ([`lib/auth-client.ts`](lib/auth-client.ts)). |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | For gallery/admin uploads | Cloudinary API credentials. |
 | `CLOUDINARY_UPLOAD_PREFIX` | Optional | Upload folder prefix ([`lib/cloudinary/folder.ts`](lib/cloudinary/folder.ts)). |
-| `LUMA_API_KEY` | Optional | Enables event listings from Luma; without it, events UI degrades gracefully. |
+| `LUMA_API_KEY` | Optional | Enables event listings from Luma and webhook setup; without it, events UI degrades gracefully. |
+| `LUMA_WEBHOOK_SECRET` | Recommended for Luma webhooks | Verifies Luma webhook signatures from `webhook-*` / `svix-*` headers using the returned `whsec_...` secret. |
+| `LUMA_WEBHOOK_ROUTE_TOKEN` | Recommended for Luma webhooks | Shared token accepted by `/webhook` through `?token=...`, `x-webhook-token`, or bearer auth. |
+| `LUMA_WEBHOOK_URL` | Optional | Absolute webhook URL for `pnpm luma:webhook:create`. Defaults to `${NEXT_PUBLIC_APP_URL}/webhook` or `${BETTER_AUTH_URL}/webhook`. |
+| `LUMA_WEBHOOK_EVENTS` | Optional | Comma-separated event types for webhook creation. Defaults to `event.created,event.updated,event.canceled,calendar.event.added`. |
 | `OPENAI_API_KEY` | For admin AI features | Enables showcase AI reviews, guarded batch review, auto-approval plus featuring for qualifying pending submissions, and AI form draft generation. |
 | `OPENAI_MODEL` | Optional | Overrides the default OpenAI model used for showcase reviews (`gpt-4o-mini`). |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | For showcase emails | Enables Nodemailer email receipts and AI score summaries for community showcase submitters. Missing SMTP config disables outbound email gracefully. |
@@ -70,6 +74,13 @@ Showcase email verification:
 2. Submit a project through `/community-showcase`.
 3. Confirm the submitter receives an acknowledgement email immediately.
 4. Confirm the submitter receives a quality score email after the background AI review completes.
+
+Luma webhook setup:
+
+1. Configure `LUMA_API_KEY`, `NEXT_PUBLIC_APP_URL` or `LUMA_WEBHOOK_URL`, and preferably `LUMA_WEBHOOK_ROUTE_TOKEN`.
+2. Run `pnpm luma:webhook:create`.
+3. Save the returned Luma `secret` as `LUMA_WEBHOOK_SECRET`.
+4. Run `pnpm db:migrate` so webhook deliveries and event snapshots can be stored.
 
 ## Database migrations
 
@@ -89,6 +100,7 @@ Other scripts: **`pnpm db:generate`**, **`pnpm db:push`**, **`pnpm db:studio`**,
 | `pnpm db:probe` | Test DB URL / SSL / pooler behavior |
 | `pnpm db:generate` | `drizzle-kit generate` |
 | `pnpm db:push` / `pnpm db:studio` | Drizzle Kit push / Studio |
+| `pnpm luma:webhook:create` | Register `${APP_URL}/webhook` with Luma using `LUMA_API_KEY` |
 
 ## Deploying
 

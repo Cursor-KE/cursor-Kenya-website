@@ -1,5 +1,8 @@
 import 'server-only'
 
+import { asc, eq } from 'drizzle-orm'
+import { db } from '@/db'
+import { lumaEvents } from '@/db/schema'
 import type { CommunityEvent } from '@/lib/luma/types'
 
 const LUMA_BASE = 'https://public-api.luma.com'
@@ -41,8 +44,25 @@ function mapEntry (raw: LumaListResponse['entries'] extends (infer E)[] | undefi
   }
 }
 
-/** Fetch all events (paginated) from Luma calendar API */
-export async function getLumaEvents (): Promise<CommunityEvent[]> {
+async function getStoredLumaEvents (): Promise<CommunityEvent[]> {
+  const rows = await db
+    .select()
+    .from(lumaEvents)
+    .where(eq(lumaEvents.status, 'active'))
+    .orderBy(asc(lumaEvents.startAt))
+
+  return rows.map((event) => ({
+    id: event.id,
+    title: event.title,
+    startAt: event.startAt.toISOString(),
+    endAt: event.endAt?.toISOString() ?? null,
+    url: event.url,
+    coverUrl: event.coverUrl,
+  }))
+}
+
+/** Fetch all events (paginated) from Luma calendar API. */
+async function fetchLumaEventsFromApi (): Promise<CommunityEvent[]> {
   const headers = getHeaders()
   if (!headers) {
     console.warn('LUMA_API_KEY missing; skipping Luma fetch')
@@ -79,6 +99,18 @@ export async function getLumaEvents (): Promise<CommunityEvent[]> {
   }
 
   return out
+}
+
+/** Fetch events from webhook-backed storage, falling back to Luma API before webhooks arrive. */
+export async function getLumaEvents (): Promise<CommunityEvent[]> {
+  try {
+    const stored = await getStoredLumaEvents()
+    if (stored.length > 0) return stored
+  } catch (err) {
+    console.error('getStoredLumaEvents', err)
+  }
+
+  return fetchLumaEventsFromApi()
 }
 
 export async function getNextUpcomingEvent (): Promise<CommunityEvent | null> {

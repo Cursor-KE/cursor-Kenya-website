@@ -142,6 +142,48 @@ export const videos = pgTable(
   (t) => [index('videos_sort_order_idx').on(t.sortOrder)]
 )
 
+export const lumaEvents = pgTable(
+  'luma_events',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    startAt: timestamp('start_at', { withTimezone: true }).notNull(),
+    endAt: timestamp('end_at', { withTimezone: true }),
+    url: text('url').notNull(),
+    coverUrl: text('cover_url'),
+    status: text('status').notNull().default('active').$type<'active' | 'canceled'>(),
+    rawPayload: jsonb('raw_payload').notNull().$type<Record<string, unknown>>(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [
+    index('luma_events_start_at_idx').on(t.startAt),
+    index('luma_events_status_idx').on(t.status),
+  ]
+)
+
+export const lumaWebhookDeliveries = pgTable(
+  'luma_webhook_deliveries',
+  {
+    id: text('id').primaryKey(),
+    eventType: text('event_type').notNull(),
+    lumaObjectId: text('luma_object_id'),
+    payload: jsonb('payload').notNull().$type<Record<string, unknown>>(),
+    status: text('status').notNull().default('processing').$type<'processing' | 'processed' | 'ignored' | 'failed'>(),
+    error: text('error'),
+    receivedAt: timestamp('received_at', { withTimezone: true }).defaultNow().notNull(),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+  },
+  (t) => [
+    index('luma_webhook_deliveries_event_type_idx').on(t.eventType),
+    index('luma_webhook_deliveries_object_idx').on(t.lumaObjectId),
+    index('luma_webhook_deliveries_received_at_idx').on(t.receivedAt),
+  ]
+)
+
 export const frameCardSettings = pgTable('frame_card_settings', {
   id: text('id').primaryKey().default('default'),
   title: text('title').notNull().default('/Nairobi Meetup'),
