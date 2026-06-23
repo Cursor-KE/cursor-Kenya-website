@@ -59,7 +59,7 @@ Use **`pnpm db:probe`** to verify connectivity and pooler/SSL behavior without s
 | `LUMA_WEBHOOK_SECRET` | Recommended for Luma webhooks | Verifies Luma webhook signatures from `webhook-*` / `svix-*` headers using the returned `whsec_...` secret. |
 | `LUMA_WEBHOOK_ROUTE_TOKEN` | Recommended for Luma webhooks | Shared token accepted by `/webhook` through `?token=...`, `x-webhook-token`, or bearer auth. |
 | `LUMA_WEBHOOK_URL` | Optional | Absolute webhook URL for `pnpm luma:webhook:create`. Defaults to `${NEXT_PUBLIC_APP_URL}/webhook` or `${BETTER_AUTH_URL}/webhook`. |
-| `LUMA_WEBHOOK_EVENTS` | Optional | Comma-separated event types for webhook creation. Defaults to `event.created,event.updated,event.canceled,calendar.event.added`. |
+| `LUMA_WEBHOOK_EVENTS` | Optional | Comma-separated event types for webhook creation. Defaults to event lifecycle plus guest/ticket registration events. |
 | `OPENAI_API_KEY` | For admin AI features | Enables showcase AI reviews, guarded batch review, auto-approval plus featuring for qualifying pending submissions, and AI form draft generation. |
 | `OPENAI_MODEL` | Optional | Overrides the default OpenAI model used for showcase reviews (`gpt-4o-mini`). |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | For showcase emails | Enables Nodemailer email receipts and AI score summaries for community showcase submitters. Missing SMTP config disables outbound email gracefully. |
@@ -81,6 +81,7 @@ Luma webhook setup:
 2. Run `pnpm luma:webhook:create`.
 3. Save the returned Luma `secret` as `LUMA_WEBHOOK_SECRET`.
 4. Run `pnpm db:migrate` so webhook deliveries and event snapshots can be stored.
+5. Check `/admin/events` for synced events, recent webhook deliveries, guests, tickets, and failures.
 
 ## Database migrations
 

@@ -44,6 +44,25 @@ function mapEntry (raw: LumaListResponse['entries'] extends (infer E)[] | undefi
   }
 }
 
+async function persistFetchedEvents (events: CommunityEvent[]) {
+  if (events.length === 0) return
+
+  await db
+    .insert(lumaEvents)
+    .values(events.map((event) => ({
+      id: event.id,
+      title: event.title,
+      startAt: new Date(event.startAt),
+      endAt: event.endAt ? new Date(event.endAt) : null,
+      url: event.url,
+      coverUrl: event.coverUrl,
+      status: 'active' as const,
+      rawPayload: event,
+      updatedAt: new Date(),
+    })))
+    .onConflictDoNothing()
+}
+
 async function getStoredLumaEvents (): Promise<CommunityEvent[]> {
   const rows = await db
     .select()
@@ -110,7 +129,14 @@ export async function getLumaEvents (): Promise<CommunityEvent[]> {
     console.error('getStoredLumaEvents', err)
   }
 
-  return fetchLumaEventsFromApi()
+  const fetched = await fetchLumaEventsFromApi()
+  try {
+    await persistFetchedEvents(fetched)
+  } catch (err) {
+    console.error('persistFetchedEvents', err)
+  }
+
+  return fetched
 }
 
 export async function getNextUpcomingEvent (): Promise<CommunityEvent | null> {

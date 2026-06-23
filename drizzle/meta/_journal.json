@@ -57,6 +57,13 @@
       "when": 1782220680000,
       "tag": "0007_luma_webhooks",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782220690000,
+      "tag": "0008_luma_guests_tickets",
+      "breakpoints": true
     }
   ]
 }

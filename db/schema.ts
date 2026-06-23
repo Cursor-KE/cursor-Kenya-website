@@ -184,6 +184,60 @@ export const lumaWebhookDeliveries = pgTable(
   ]
 )
 
+export const lumaGuests = pgTable(
+  'luma_guests',
+  {
+    id: text('id').primaryKey(),
+    eventId: text('event_id').notNull(),
+    userId: text('user_id'),
+    email: text('email'),
+    name: text('name'),
+    firstName: text('first_name'),
+    lastName: text('last_name'),
+    approvalStatus: text('approval_status'),
+    phoneNumber: text('phone_number'),
+    registeredAt: timestamp('registered_at', { withTimezone: true }),
+    checkedInAt: timestamp('checked_in_at', { withTimezone: true }),
+    rawPayload: jsonb('raw_payload').notNull().$type<Record<string, unknown>>(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [
+    index('luma_guests_event_id_idx').on(t.eventId),
+    index('luma_guests_email_idx').on(t.email),
+    index('luma_guests_approval_status_idx').on(t.approvalStatus),
+    index('luma_guests_registered_at_idx').on(t.registeredAt),
+  ]
+)
+
+export const lumaTickets = pgTable(
+  'luma_tickets',
+  {
+    id: text('id').primaryKey(),
+    eventId: text('event_id').notNull(),
+    guestId: text('guest_id'),
+    ticketTypeId: text('ticket_type_id'),
+    name: text('name'),
+    amount: integer('amount'),
+    currency: text('currency'),
+    checkedInAt: timestamp('checked_in_at', { withTimezone: true }),
+    rawPayload: jsonb('raw_payload').notNull().$type<Record<string, unknown>>(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [
+    index('luma_tickets_event_id_idx').on(t.eventId),
+    index('luma_tickets_guest_id_idx').on(t.guestId),
+    index('luma_tickets_checked_in_at_idx').on(t.checkedInAt),
+  ]
+)
+
 export const frameCardSettings = pgTable('frame_card_settings', {
   id: text('id').primaryKey().default('default'),
   title: text('title').notNull().default('/Nairobi Meetup'),

@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
-import { lumaEvents, lumaWebhookDeliveries } from '@/db/schema'
+import { lumaEvents, lumaGuests, lumaTickets, lumaWebhookDeliveries } from '@/db/schema'
 
 const lumaWebhookEventTypeSchema = z.enum([
   'calendar.event.added',
@@ -41,6 +41,14 @@ function asDate (value: unknown): Date | null {
   if (!raw) return null
   const date = new Date(raw)
   return Number.isNaN(date.getTime()) ? null : date
+}
+
+function asInteger (value: unknown): number | null {
+  if (typeof value === 'number' && Number.isInteger(value)) return value
+  if (typeof value === 'number' && Number.isFinite(value)) return Math.round(value)
+  if (typeof value !== 'string' || value.trim() === '') return null
+  const parsed = Number.parseInt(value, 10)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 function sha256 (value: string): string {
@@ -118,7 +126,16 @@ export function verifyLumaWebhookToken (request: Request): boolean {
 
 function getLumaObjectId (payload: LumaWebhookPayload): string | null {
   if (!isRecord(payload.data)) return null
-  return asString(payload.data.id) ?? asString(payload.data.event_id)
+  const ticket = isRecord(payload.data.event_ticket) ? payload.data.event_ticket : null
+  return asString(payload.data.id) ?? asString(ticket?.id) ?? asString(payload.data.event_id)
+}
+
+function getNestedRecord (source: Record<string, unknown>, key: string): Record<string, unknown> | null {
+  return isRecord(source[key]) ? source[key] : null
+}
+
+function getEventId (data: Record<string, unknown>): string | null {
+  return asString(data.event_id) ?? asString(getNestedRecord(data, 'event')?.id)
 }
 
 function mapEventData (data: unknown, status: 'active' | 'canceled') {
@@ -168,6 +185,133 @@ async function upsertLumaEvent (data: unknown, status: 'active' | 'canceled') {
   return true
 }
 
+async function upsertEmbeddedEvent (data: Record<string, unknown>) {
+  const event = getNestedRecord(data, 'event')
+  if (!event) return false
+  return upsertLumaEvent(event, 'active')
+}
+
+function mapGuestData (data: unknown) {
+  if (!isRecord(data)) return null
+
+  const id = asString(data.id)
+  const eventId = getEventId(data)
+  if (!id || !eventId) return null
+
+  return {
+    id,
+    eventId,
+    userId: asString(data.user_id),
+    email: asString(data.user_email) ?? asString(data.email),
+    name: asString(data.user_name) ?? asString(data.name),
+    firstName: asString(data.user_first_name),
+    lastName: asString(data.user_last_name),
+    approvalStatus: asString(data.approval_status),
+    phoneNumber: asString(data.phone_number),
+    registeredAt: asDate(data.registered_at),
+    checkedInAt: asDate(data.checked_in_at) ?? asDate(data.joined_at),
+    rawPayload: data,
+    updatedAt: new Date(),
+  }
+}
+
+async function upsertLumaGuest (data: unknown) {
+  const guest = mapGuestData(data)
+  if (!guest) return false
+
+  await db
+    .insert(lumaGuests)
+    .values(guest)
+    .onConflictDoUpdate({
+      target: lumaGuests.id,
+      set: {
+        eventId: guest.eventId,
+        userId: guest.userId,
+        email: guest.email,
+        name: guest.name,
+        firstName: guest.firstName,
+        lastName: guest.lastName,
+        approvalStatus: guest.approvalStatus,
+        phoneNumber: guest.phoneNumber,
+        registeredAt: guest.registeredAt,
+        checkedInAt: guest.checkedInAt,
+        rawPayload: guest.rawPayload,
+        updatedAt: guest.updatedAt,
+      },
+    })
+
+  return true
+}
+
+function mapTicketData (data: Record<string, unknown>, ticketData: unknown) {
+  if (!isRecord(ticketData)) return null
+
+  const id = asString(ticketData.id)
+  const eventId = getEventId(data)
+  if (!id || !eventId) return null
+
+  return {
+    id,
+    eventId,
+    guestId: asString(data.id) ?? asString(ticketData.guest_id),
+    ticketTypeId: asString(ticketData.event_ticket_type_id) ?? asString(ticketData.ticket_type_id),
+    name: asString(ticketData.name),
+    amount: asInteger(ticketData.amount),
+    currency: asString(ticketData.currency),
+    checkedInAt: asDate(ticketData.checked_in_at),
+    rawPayload: ticketData,
+    updatedAt: new Date(),
+  }
+}
+
+async function upsertLumaTicket (data: Record<string, unknown>, ticketData: unknown) {
+  const ticket = mapTicketData(data, ticketData)
+  if (!ticket) return false
+
+  await db
+    .insert(lumaTickets)
+    .values(ticket)
+    .onConflictDoUpdate({
+      target: lumaTickets.id,
+      set: {
+        eventId: ticket.eventId,
+        guestId: ticket.guestId,
+        ticketTypeId: ticket.ticketTypeId,
+        name: ticket.name,
+        amount: ticket.amount,
+        currency: ticket.currency,
+        checkedInAt: ticket.checkedInAt,
+        rawPayload: ticket.rawPayload,
+        updatedAt: ticket.updatedAt,
+      },
+    })
+
+  return true
+}
+
+async function upsertTicketsFromGuestPayload (data: Record<string, unknown>) {
+  let processed = 0
+  const eventTicket = data.event_ticket
+  if (await upsertLumaTicket(data, eventTicket)) processed += 1
+
+  const eventTickets = Array.isArray(data.event_tickets) ? data.event_tickets : []
+  for (const ticket of eventTickets) {
+    if (await upsertLumaTicket(data, ticket)) processed += 1
+  }
+
+  return processed
+}
+
+async function syncGuestPayload (data: unknown) {
+  if (!isRecord(data)) return false
+
+  await upsertEmbeddedEvent(data)
+  const guestUpdated = await upsertLumaGuest(data)
+  const ticketsUpdated = await upsertTicketsFromGuestPayload(data)
+
+  return guestUpdated || ticketsUpdated > 0
+}
+
 async function markLumaEventCanceled (payload: LumaWebhookPayload) {
   const updated = await upsertLumaEvent(payload.data, 'canceled')
   if (updated) return true
@@ -191,10 +335,15 @@ async function handleWebhookPayload (payload: LumaWebhookPayload): Promise<Deliv
       return await upsertLumaEvent(payload.data, 'active') ? 'processed' : 'ignored'
     case 'event.canceled':
       return await markLumaEventCanceled(payload) ? 'processed' : 'ignored'
-    case 'calendar.person.subscribed':
     case 'guest.registered':
     case 'guest.updated':
+      return await syncGuestPayload(payload.data) ? 'processed' : 'ignored'
     case 'ticket.registered':
+      if (!isRecord(payload.data)) return 'ignored'
+      await upsertEmbeddedEvent(payload.data)
+      await upsertLumaGuest(payload.data)
+      return await upsertLumaTicket(payload.data, payload.data.event_ticket) ? 'processed' : 'ignored'
+    case 'calendar.person.subscribed':
       return 'ignored'
     default:
       payload.type satisfies never

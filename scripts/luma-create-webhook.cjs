@@ -9,7 +9,10 @@ const routeToken = process.env.LUMA_WEBHOOK_ROUTE_TOKEN
 const explicitUrl = process.env.LUMA_WEBHOOK_URL
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL
 
-const eventTypes = (process.env.LUMA_WEBHOOK_EVENTS || 'event.created,event.updated,event.canceled,calendar.event.added')
+const eventTypes = (
+  process.env.LUMA_WEBHOOK_EVENTS ||
+  'event.created,event.updated,event.canceled,calendar.event.added,guest.registered,guest.updated,ticket.registered'
+)
   .split(',')
   .map((eventType) => eventType.trim())
   .filter(Boolean)
