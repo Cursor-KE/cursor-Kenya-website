@@ -61,39 +61,38 @@ function safeEqual (a: string, b: string): boolean {
   return aBuffer.length === bBuffer.length && timingSafeEqual(aBuffer, bBuffer)
 }
 
-function decodeWebhookSecret (secret: string): Buffer {
-  const encoded = secret.startsWith('whsec_') ? secret.slice('whsec_'.length) : secret
-  return Buffer.from(encoded, 'base64')
-}
+function parseSignatureHeader (header: string) {
+  let timestamp: string | null = null
+  const signatures: string[] = []
 
-function getSignatureHeaders (request: Request) {
-  return {
-    id: request.headers.get('webhook-id') ?? request.headers.get('svix-id'),
-    timestamp: request.headers.get('webhook-timestamp') ?? request.headers.get('svix-timestamp'),
-    signature: request.headers.get('webhook-signature') ?? request.headers.get('svix-signature'),
+  for (const part of header.split(',')) {
+    const separatorIndex = part.indexOf('=')
+    if (separatorIndex < 0) continue
+
+    const key = part.slice(0, separatorIndex).trim()
+    const value = part.slice(separatorIndex + 1).trim()
+    if (!value) continue
+
+    if (key === 't') timestamp = value
+    if (key === 'v1') signatures.push(value)
   }
+
+  return { timestamp, signatures }
 }
 
-function parseSignatures (header: string): string[] {
-  return header
-    .split(' ')
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => {
-      const separator = part.includes(',') ? ',' : '='
-      const separatorIndex = part.indexOf(separator)
-      const version = separatorIndex >= 0 ? part.slice(0, separatorIndex) : ''
-      const signature = separatorIndex >= 0 ? part.slice(separatorIndex + 1) : ''
-      return version === 'v1' && signature ? signature : part
-    })
+export function isLumaWebhookAuthConfigured (): boolean {
+  return Boolean(process.env.LUMA_WEBHOOK_SECRET || process.env.LUMA_WEBHOOK_ROUTE_TOKEN)
 }
 
 export function verifyLumaWebhookSignature (request: Request, rawBody: string): boolean {
   const secret = process.env.LUMA_WEBHOOK_SECRET
   if (!secret) return true
 
-  const { id, timestamp, signature } = getSignatureHeaders(request)
-  if (!id || !timestamp || !signature) return false
+  const signatureHeader = request.headers.get('webhook-signature')
+  if (!signatureHeader) return false
+
+  const { timestamp, signatures } = parseSignatureHeader(signatureHeader)
+  if (!timestamp || signatures.length === 0) return false
 
   const timestampSeconds = Number.parseInt(timestamp, 10)
   if (!Number.isFinite(timestampSeconds)) return false
@@ -101,12 +100,12 @@ export function verifyLumaWebhookSignature (request: Request, rawBody: string): 
   const ageSeconds = Math.abs(Date.now() / 1000 - timestampSeconds)
   if (ageSeconds > 5 * 60) return false
 
-  const signedContent = `${id}.${timestamp}.${rawBody}`
-  const expected = createHmac('sha256', decodeWebhookSecret(secret))
+  const signedContent = `${timestamp}.${rawBody}`
+  const expected = createHmac('sha256', secret)
     .update(signedContent)
-    .digest('base64')
+    .digest('hex')
 
-  return parseSignatures(signature).some((candidate) => safeEqual(candidate, expected))
+  return signatures.some((candidate) => safeEqual(candidate, expected))
 }
 
 export function verifyLumaWebhookToken (request: Request): boolean {
@@ -358,6 +357,16 @@ export async function processLumaWebhookBody (rawBody: string) {
   const payloadRecord = isRecord(json) ? json : { type: payload.type, data: payload.data }
   const objectId = getLumaObjectId(payload)
 
+  const existingDelivery = await db
+    .select({ status: lumaWebhookDeliveries.status })
+    .from(lumaWebhookDeliveries)
+    .where(eq(lumaWebhookDeliveries.id, deliveryId))
+    .limit(1)
+
+  if (existingDelivery[0]?.status === 'processed' || existingDelivery[0]?.status === 'ignored') {
+    return { duplicate: true, eventType: payload.type, objectId }
+  }
+
   const inserted = await db
     .insert(lumaWebhookDeliveries)
     .values({
@@ -371,7 +380,17 @@ export async function processLumaWebhookBody (rawBody: string) {
     .returning({ id: lumaWebhookDeliveries.id })
 
   if (inserted.length === 0) {
-    return { duplicate: true, eventType: payload.type, objectId }
+    await db
+      .update(lumaWebhookDeliveries)
+      .set({
+        eventType: payload.type,
+        lumaObjectId: objectId,
+        payload: payloadRecord,
+        status: 'processing',
+        error: null,
+        processedAt: null,
+      })
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
   }
 
   try {
