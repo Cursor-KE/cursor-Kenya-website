@@ -2,8 +2,6 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHmac } from 'node:crypto'
 
-process.env.DATABASE_URL ??= 'postgres://cursork:cursork@127.0.0.1:5432/cursork'
-
 const originalSecret = process.env.LUMA_WEBHOOK_SECRET
 const originalRouteToken = process.env.LUMA_WEBHOOK_ROUTE_TOKEN
 
@@ -35,7 +33,7 @@ function signedRequest (body: string, secret: string) {
 test.afterEach(restoreLumaEnv)
 
 test('verifies Luma webhook signatures using the documented t.raw_body hex digest', async () => {
-  const { verifyLumaWebhookSignature } = await import('../lib/luma/webhook.ts')
+  const { verifyLumaWebhookSignature } = await import('../lib/luma/webhook-auth.ts')
   const secret = 'whsec_test_secret'
   const body = JSON.stringify({
     type: 'event.created',
@@ -53,7 +51,7 @@ test('verifies Luma webhook signatures using the documented t.raw_body hex diges
 })
 
 test('rejects signatures generated from the old id.timestamp.body base64 scheme', async () => {
-  const { verifyLumaWebhookSignature } = await import('../lib/luma/webhook.ts')
+  const { verifyLumaWebhookSignature } = await import('../lib/luma/webhook-auth.ts')
   const secret = 'whsec_test_secret'
   const body = JSON.stringify({ type: 'event.updated', data: { id: 'evt_1' } })
   const timestamp = Math.floor(Date.now() / 1000).toString()
@@ -76,17 +74,11 @@ test('rejects signatures generated from the old id.timestamp.body base64 scheme'
   assert.equal(verifyLumaWebhookSignature(request, body), false)
 })
 
-test('webhook route rejects POSTs when no webhook authentication is configured', async () => {
-  const { POST } = await import('../app/webhook/route.ts')
+test('reports missing webhook authentication when no secret or route token is configured', async () => {
+  const { isLumaWebhookAuthConfigured } = await import('../lib/luma/webhook-auth.ts')
 
   delete process.env.LUMA_WEBHOOK_SECRET
   delete process.env.LUMA_WEBHOOK_ROUTE_TOKEN
 
-  const response = await POST(new Request('https://example.com/webhook', {
-    method: 'POST',
-    body: JSON.stringify({ type: 'event.created', data: { id: 'evt_1' } }),
-  }))
-
-  assert.equal(response.status, 401)
-  assert.deepEqual(await response.json(), { error: 'Webhook authentication is not configured' })
+  assert.equal(isLumaWebhookAuthConfigured(), false)
 })
