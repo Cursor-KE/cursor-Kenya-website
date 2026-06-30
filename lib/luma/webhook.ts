@@ -1,11 +1,12 @@
 import 'server-only'
 
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
 import { lumaEvents, lumaGuests, lumaTickets, lumaWebhookDeliveries } from '@/db/schema'
+import { isRetryableLumaWebhookDeliveryStatus } from '@/lib/luma/webhook-delivery'
 
 const lumaWebhookEventTypeSchema = z.enum([
   'calendar.event.added',
@@ -371,7 +372,32 @@ export async function processLumaWebhookBody (rawBody: string) {
     .returning({ id: lumaWebhookDeliveries.id })
 
   if (inserted.length === 0) {
-    return { duplicate: true, eventType: payload.type, objectId }
+    const [existingDelivery] = await db
+      .select({ status: lumaWebhookDeliveries.status })
+      .from(lumaWebhookDeliveries)
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
+      .limit(1)
+
+    if (!existingDelivery || !isRetryableLumaWebhookDeliveryStatus(existingDelivery.status)) {
+      return { duplicate: true, eventType: payload.type, objectId }
+    }
+
+    const reclaimed = await db
+      .update(lumaWebhookDeliveries)
+      .set({
+        status: 'processing',
+        error: null,
+        processedAt: null,
+      })
+      .where(and(
+        eq(lumaWebhookDeliveries.id, deliveryId),
+        eq(lumaWebhookDeliveries.status, 'failed')
+      ))
+      .returning({ id: lumaWebhookDeliveries.id })
+
+    if (reclaimed.length === 0) {
+      return { duplicate: true, eventType: payload.type, objectId }
+    }
   }
 
   try {
