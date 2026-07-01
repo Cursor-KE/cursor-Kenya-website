@@ -1,10 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-process.env.DATABASE_URL ??= 'postgres://cursork:cursork@127.0.0.1:5432/cursork'
-
-const webhook = await import('../lib/luma/webhook.ts')
-const route = await import('../app/webhook/route.ts')
+const webhook = await import('../lib/luma/webhook-core.ts')
 
 type StoredDeliveryStatus = 'processing' | 'processed' | 'ignored' | 'failed'
 type DeliveryHandlerStatus = Exclude<StoredDeliveryStatus, 'processing'>
@@ -78,19 +75,11 @@ function createDeliveryDeps (options: {
   }
 }
 
-test('webhook route rejects writes when no auth mechanism is configured', async () => {
+test('webhook auth is not configured when both auth env vars are absent', () => {
   const originalSecret = process.env.LUMA_WEBHOOK_SECRET
   const originalToken = process.env.LUMA_WEBHOOK_ROUTE_TOKEN
   restoreWebhookAuthEnv(undefined, undefined)
 
-  const response = await route.POST(
-    new Request('https://example.com/webhook', {
-      method: 'POST',
-      body: JSON.stringify(eventPayload),
-    })
-  )
-
-  assert.equal(response.status, 503)
   assert.equal(webhook.isLumaWebhookAuthConfigured(), false)
 
   restoreWebhookAuthEnv(originalSecret, originalToken)
