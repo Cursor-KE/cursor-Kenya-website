@@ -27,6 +27,29 @@ type LumaWebhookEventType = z.infer<typeof lumaWebhookEventTypeSchema>
 type LumaWebhookPayload = z.infer<typeof lumaWebhookPayloadSchema>
 
 type DeliveryStatus = 'processed' | 'ignored' | 'failed'
+type StoredDeliveryStatus = DeliveryStatus | 'processing'
+
+type DeliveryInsert = {
+  id: string
+  eventType: LumaWebhookEventType
+  lumaObjectId: string | null
+  payload: Record<string, unknown>
+}
+
+type DeliveryUpdate = {
+  status: StoredDeliveryStatus
+  error?: string | null
+  processedAt?: Date | null
+}
+
+type ProcessLumaWebhookDeps = {
+  insertDelivery: (delivery: DeliveryInsert) => Promise<boolean>
+  getDeliveryStatus: (deliveryId: string) => Promise<StoredDeliveryStatus | null>
+  markDeliveryProcessing: (deliveryId: string) => Promise<void>
+  updateDelivery: (deliveryId: string, update: DeliveryUpdate) => Promise<void>
+  handlePayload: (payload: LumaWebhookPayload) => Promise<DeliveryStatus>
+  revalidate: () => void
+}
 
 function isRecord (value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -122,6 +145,10 @@ export function verifyLumaWebhookToken (request: Request): boolean {
   return [queryToken, headerToken, bearerToken].some((candidate) => (
     Boolean(candidate) && safeEqual(candidate ?? '', expected)
   ))
+}
+
+export function isLumaWebhookAuthConfigured (): boolean {
+  return Boolean(process.env.LUMA_WEBHOOK_SECRET || process.env.LUMA_WEBHOOK_ROUTE_TOKEN)
 }
 
 function getLumaObjectId (payload: LumaWebhookPayload): string | null {
@@ -351,58 +378,124 @@ async function handleWebhookPayload (payload: LumaWebhookPayload): Promise<Deliv
   }
 }
 
-export async function processLumaWebhookBody (rawBody: string) {
+async function insertLumaWebhookDelivery (delivery: DeliveryInsert) {
+  const inserted = await db
+    .insert(lumaWebhookDeliveries)
+    .values({
+      id: delivery.id,
+      eventType: delivery.eventType,
+      lumaObjectId: delivery.lumaObjectId,
+      payload: delivery.payload,
+      status: 'processing',
+    })
+    .onConflictDoNothing()
+    .returning({ id: lumaWebhookDeliveries.id })
+
+  return inserted.length > 0
+}
+
+async function getLumaWebhookDeliveryStatus (deliveryId: string) {
+  const rows = await db
+    .select({ status: lumaWebhookDeliveries.status })
+    .from(lumaWebhookDeliveries)
+    .where(eq(lumaWebhookDeliveries.id, deliveryId))
+    .limit(1)
+
+  return rows[0]?.status ?? null
+}
+
+async function markLumaWebhookDeliveryProcessing (deliveryId: string) {
+  await db
+    .update(lumaWebhookDeliveries)
+    .set({
+      status: 'processing',
+      error: null,
+      processedAt: null,
+    })
+    .where(eq(lumaWebhookDeliveries.id, deliveryId))
+}
+
+async function updateLumaWebhookDelivery (deliveryId: string, update: DeliveryUpdate) {
+  await db
+    .update(lumaWebhookDeliveries)
+    .set(update)
+    .where(eq(lumaWebhookDeliveries.id, deliveryId))
+}
+
+const defaultProcessLumaWebhookDeps: ProcessLumaWebhookDeps = {
+  insertDelivery: insertLumaWebhookDelivery,
+  getDeliveryStatus: getLumaWebhookDeliveryStatus,
+  markDeliveryProcessing: markLumaWebhookDeliveryProcessing,
+  updateDelivery: updateLumaWebhookDelivery,
+  handlePayload: handleWebhookPayload,
+  revalidate: () => {
+    revalidatePath('/')
+    revalidatePath('/events')
+  },
+}
+
+export async function processLumaWebhookBodyWithDeps (
+  rawBody: string,
+  deps: ProcessLumaWebhookDeps
+) {
   const deliveryId = sha256(rawBody)
   const json = JSON.parse(rawBody) as unknown
   const payload = lumaWebhookPayloadSchema.parse(json)
   const payloadRecord = isRecord(json) ? json : { type: payload.type, data: payload.data }
   const objectId = getLumaObjectId(payload)
 
-  const inserted = await db
-    .insert(lumaWebhookDeliveries)
-    .values({
-      id: deliveryId,
-      eventType: payload.type,
-      lumaObjectId: objectId,
-      payload: payloadRecord,
-      status: 'processing',
-    })
-    .onConflictDoNothing()
-    .returning({ id: lumaWebhookDeliveries.id })
+  const inserted = await deps.insertDelivery({
+    id: deliveryId,
+    eventType: payload.type,
+    lumaObjectId: objectId,
+    payload: payloadRecord,
+  })
 
-  if (inserted.length === 0) {
-    return { duplicate: true, eventType: payload.type, objectId }
+  if (!inserted) {
+    const existingStatus = await deps.getDeliveryStatus(deliveryId)
+    if (existingStatus === 'processed' || existingStatus === 'ignored') {
+      return { duplicate: true, eventType: payload.type, objectId, status: existingStatus }
+    }
+
+    if (existingStatus === 'processing') {
+      return {
+        duplicate: true,
+        eventType: payload.type,
+        objectId,
+        status: existingStatus,
+        retryable: true,
+      }
+    }
+
+    await deps.markDeliveryProcessing(deliveryId)
   }
 
   try {
-    const status = await handleWebhookPayload(payload)
+    const status = await deps.handlePayload(payload)
 
-    await db
-      .update(lumaWebhookDeliveries)
-      .set({
-        status,
-        processedAt: new Date(),
-      })
-      .where(eq(lumaWebhookDeliveries.id, deliveryId))
+    await deps.updateDelivery(deliveryId, {
+      status,
+      processedAt: new Date(),
+    })
 
     if (status === 'processed') {
-      revalidatePath('/')
-      revalidatePath('/events')
+      deps.revalidate()
     }
 
     return { duplicate: false, eventType: payload.type, objectId, status }
   } catch (error) {
-    await db
-      .update(lumaWebhookDeliveries)
-      .set({
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown webhook processing error',
-        processedAt: new Date(),
-      })
-      .where(eq(lumaWebhookDeliveries.id, deliveryId))
+    await deps.updateDelivery(deliveryId, {
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Unknown webhook processing error',
+      processedAt: new Date(),
+    })
 
     throw error
   }
+}
+
+export async function processLumaWebhookBody (rawBody: string) {
+  return processLumaWebhookBodyWithDeps(rawBody, defaultProcessLumaWebhookDeps)
 }
 
 export type { LumaWebhookEventType }
