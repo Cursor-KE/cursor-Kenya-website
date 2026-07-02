@@ -40,6 +40,10 @@ registerHooks({
       return nextResolve(pathToFileURL(path.join(root, 'node_modules/next/server.js')).href, context)
     }
 
+    if (specifier === 'next/cache') {
+      return nextResolve(pathToFileURL(path.join(root, 'tests/next-cache-stub.mjs')).href, context)
+    }
+
     if (specifier.startsWith('@/')) {
       const resolved = resolveAppSpecifier(specifier)
       if (resolved) {
