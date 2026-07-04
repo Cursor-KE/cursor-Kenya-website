@@ -109,6 +109,10 @@ export function verifyLumaWebhookSignature (request: Request, rawBody: string): 
   return parseSignatures(signature).some((candidate) => safeEqual(candidate, expected))
 }
 
+export function hasLumaWebhookAuthentication () {
+  return Boolean(process.env.LUMA_WEBHOOK_SECRET || process.env.LUMA_WEBHOOK_ROUTE_TOKEN)
+}
+
 export function verifyLumaWebhookToken (request: Request): boolean {
   const expected = process.env.LUMA_WEBHOOK_ROUTE_TOKEN
   if (!expected) return true
