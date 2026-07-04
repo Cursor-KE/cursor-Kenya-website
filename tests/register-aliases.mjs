@@ -8,6 +8,7 @@ const extensions = ['.ts', '.tsx', '.mts', '.js', '.mjs']
 const stubSpecifiers = new Map([
   ['server-only', pathToFileURL(path.join(root, 'tests/stubs/server-only.mjs')).href],
   ['next/cache', pathToFileURL(path.join(root, 'tests/stubs/next-cache.mjs')).href],
+  ['next/server', pathToFileURL(path.join(root, 'tests/stubs/next-server.mjs')).href],
 ])
 
 function resolveAppSpecifier (specifier) {
