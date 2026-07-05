@@ -1,11 +1,7 @@
-import test, { mock } from 'node:test'
+import test from 'node:test'
 import assert from 'node:assert/strict'
 
-mock.module('@/db', {
-  namedExports: {
-    db: {},
-  },
-})
+process.env.DATABASE_URL ??= 'postgres://test:test@127.0.0.1:5432/test'
 
 const {
   getLumaTicketPayloads,
