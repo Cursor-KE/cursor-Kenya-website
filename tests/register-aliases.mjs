@@ -5,6 +5,8 @@ import { pathToFileURL } from 'node:url'
 
 const root = path.resolve(import.meta.dirname, '..')
 const extensions = ['.ts', '.tsx', '.mts', '.js', '.mjs']
+const serverOnlyStub = 'data:text/javascript,export default {}'
+const nextCacheStub = 'data:text/javascript,export function revalidatePath() {}'
 
 function resolveAppSpecifier (specifier) {
   const basePath = path.join(root, specifier.slice(2))
@@ -32,6 +34,20 @@ function resolveAppSpecifier (specifier) {
 
 registerHooks({
   resolve (specifier, context, nextResolve) {
+    if (specifier === 'server-only') {
+      return {
+        url: serverOnlyStub,
+        shortCircuit: true,
+      }
+    }
+
+    if (specifier === 'next/cache') {
+      return {
+        url: nextCacheStub,
+        shortCircuit: true,
+      }
+    }
+
     if (specifier.startsWith('@/')) {
       const resolved = resolveAppSpecifier(specifier)
       if (resolved) {
