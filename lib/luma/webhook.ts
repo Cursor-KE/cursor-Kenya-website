@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { and, eq, lt, or } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -27,6 +27,9 @@ type LumaWebhookEventType = z.infer<typeof lumaWebhookEventTypeSchema>
 type LumaWebhookPayload = z.infer<typeof lumaWebhookPayloadSchema>
 
 type DeliveryStatus = 'processed' | 'ignored' | 'failed'
+type StoredDeliveryStatus = DeliveryStatus | 'processing'
+
+const PROCESSING_RETRY_WINDOW_MS = 5 * 60 * 1000
 
 function isRecord (value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -90,7 +93,7 @@ function parseSignatures (header: string): string[] {
 
 export function verifyLumaWebhookSignature (request: Request, rawBody: string): boolean {
   const secret = process.env.LUMA_WEBHOOK_SECRET
-  if (!secret) return true
+  if (!secret) return false
 
   const { id, timestamp, signature } = getSignatureHeaders(request)
   if (!id || !timestamp || !signature) return false
@@ -111,7 +114,7 @@ export function verifyLumaWebhookSignature (request: Request, rawBody: string): 
 
 export function verifyLumaWebhookToken (request: Request): boolean {
   const expected = process.env.LUMA_WEBHOOK_ROUTE_TOKEN
-  if (!expected) return true
+  if (!expected) return false
 
   const url = new URL(request.url)
   const queryToken = url.searchParams.get('token')
@@ -122,6 +125,25 @@ export function verifyLumaWebhookToken (request: Request): boolean {
   return [queryToken, headerToken, bearerToken].some((candidate) => (
     Boolean(candidate) && safeEqual(candidate ?? '', expected)
   ))
+}
+
+export function isLumaWebhookSignatureConfigured (): boolean {
+  return Boolean(process.env.LUMA_WEBHOOK_SECRET)
+}
+
+export function isLumaWebhookTokenConfigured (): boolean {
+  return Boolean(process.env.LUMA_WEBHOOK_ROUTE_TOKEN)
+}
+
+export function isRetriableLumaWebhookDelivery (
+  status: StoredDeliveryStatus,
+  receivedAt: Date,
+  now = new Date()
+): boolean {
+  if (status === 'failed') return true
+  if (status !== 'processing') return false
+
+  return receivedAt.getTime() <= now.getTime() - PROCESSING_RETRY_WINDOW_MS
 }
 
 function getLumaObjectId (payload: LumaWebhookPayload): string | null {
@@ -351,13 +373,12 @@ async function handleWebhookPayload (payload: LumaWebhookPayload): Promise<Deliv
   }
 }
 
-export async function processLumaWebhookBody (rawBody: string) {
-  const deliveryId = sha256(rawBody)
-  const json = JSON.parse(rawBody) as unknown
-  const payload = lumaWebhookPayloadSchema.parse(json)
-  const payloadRecord = isRecord(json) ? json : { type: payload.type, data: payload.data }
-  const objectId = getLumaObjectId(payload)
-
+async function claimLumaWebhookDelivery (
+  deliveryId: string,
+  payload: LumaWebhookPayload,
+  payloadRecord: Record<string, unknown>,
+  objectId: string | null
+) {
   const inserted = await db
     .insert(lumaWebhookDeliveries)
     .values({
@@ -370,7 +391,74 @@ export async function processLumaWebhookBody (rawBody: string) {
     .onConflictDoNothing()
     .returning({ id: lumaWebhookDeliveries.id })
 
-  if (inserted.length === 0) {
+  if (inserted.length > 0) {
+    return { duplicate: false, retried: false }
+  }
+
+  const now = new Date()
+  const staleBefore = new Date(now.getTime() - PROCESSING_RETRY_WINDOW_MS)
+  const reclaimed = await db
+    .update(lumaWebhookDeliveries)
+    .set({
+      eventType: payload.type,
+      lumaObjectId: objectId,
+      payload: payloadRecord,
+      status: 'processing',
+      error: null,
+      receivedAt: now,
+      processedAt: null,
+    })
+    .where(and(
+      eq(lumaWebhookDeliveries.id, deliveryId),
+      or(
+        eq(lumaWebhookDeliveries.status, 'failed'),
+        and(
+          eq(lumaWebhookDeliveries.status, 'processing'),
+          lt(lumaWebhookDeliveries.receivedAt, staleBefore)
+        )
+      )
+    ))
+    .returning({ id: lumaWebhookDeliveries.id })
+
+  if (reclaimed.length > 0) {
+    return { duplicate: false, retried: true }
+  }
+
+  const existing = await db
+    .select({
+      status: lumaWebhookDeliveries.status,
+      receivedAt: lumaWebhookDeliveries.receivedAt,
+    })
+    .from(lumaWebhookDeliveries)
+    .where(eq(lumaWebhookDeliveries.id, deliveryId))
+    .limit(1)
+
+  const delivery = existing[0]
+  if (!delivery) {
+    throw new Error('Luma webhook delivery could not be claimed')
+  }
+
+  if (delivery.status === 'processed' || delivery.status === 'ignored') {
+    return { duplicate: true, retried: false }
+  }
+
+  if (!isRetriableLumaWebhookDelivery(delivery.status, delivery.receivedAt)) {
+    throw new Error('Luma webhook delivery is already processing')
+  }
+
+  throw new Error('Luma webhook delivery retry could not be claimed')
+}
+
+export async function processLumaWebhookBody (rawBody: string) {
+  const deliveryId = sha256(rawBody)
+  const json = JSON.parse(rawBody) as unknown
+  const payload = lumaWebhookPayloadSchema.parse(json)
+  const payloadRecord = isRecord(json) ? json : { type: payload.type, data: payload.data }
+  const objectId = getLumaObjectId(payload)
+
+  const claim = await claimLumaWebhookDelivery(deliveryId, payload, payloadRecord, objectId)
+
+  if (claim.duplicate) {
     return { duplicate: true, eventType: payload.type, objectId }
   }
 
@@ -390,7 +478,7 @@ export async function processLumaWebhookBody (rawBody: string) {
       revalidatePath('/events')
     }
 
-    return { duplicate: false, eventType: payload.type, objectId, status }
+    return { duplicate: false, eventType: payload.type, objectId, status, retried: claim.retried }
   } catch (error) {
     await db
       .update(lumaWebhookDeliveries)
