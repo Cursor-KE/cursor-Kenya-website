@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import {
+  hasLumaWebhookVerificationConfig,
   processLumaWebhookBody,
   verifyLumaWebhookSignature,
   verifyLumaWebhookToken,
@@ -10,6 +11,11 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST (request: Request) {
+  if (!hasLumaWebhookVerificationConfig()) {
+    console.error('Luma webhook rejected because no verification secret or token is configured')
+    return NextResponse.json({ error: 'Webhook verification is not configured' }, { status: 503 })
+  }
+
   if (!verifyLumaWebhookToken(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

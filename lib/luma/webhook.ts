@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -26,7 +26,8 @@ const lumaWebhookPayloadSchema = z.object({
 type LumaWebhookEventType = z.infer<typeof lumaWebhookEventTypeSchema>
 type LumaWebhookPayload = z.infer<typeof lumaWebhookPayloadSchema>
 
-type DeliveryStatus = 'processed' | 'ignored' | 'failed'
+type DeliveryStatus = 'processed' | 'ignored'
+type StoredDeliveryStatus = DeliveryStatus | 'processing' | 'failed'
 
 function isRecord (value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -122,6 +123,10 @@ export function verifyLumaWebhookToken (request: Request): boolean {
   return [queryToken, headerToken, bearerToken].some((candidate) => (
     Boolean(candidate) && safeEqual(candidate ?? '', expected)
   ))
+}
+
+export function hasLumaWebhookVerificationConfig (): boolean {
+  return Boolean(process.env.LUMA_WEBHOOK_SECRET || process.env.LUMA_WEBHOOK_ROUTE_TOKEN)
 }
 
 function getLumaObjectId (payload: LumaWebhookPayload): string | null {
@@ -351,6 +356,50 @@ async function handleWebhookPayload (payload: LumaWebhookPayload): Promise<Deliv
   }
 }
 
+async function handleInsertedDelivery (
+  deliveryId: string,
+  payload: LumaWebhookPayload,
+  objectId: string | null
+) {
+  try {
+    const status = await handleWebhookPayload(payload)
+
+    await db
+      .update(lumaWebhookDeliveries)
+      .set({
+        status,
+        error: null,
+        processedAt: new Date(),
+      })
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
+
+    if (status === 'processed') {
+      revalidatePath('/')
+      revalidatePath('/events')
+    }
+
+    return { duplicate: false, eventType: payload.type, objectId, status }
+  } catch (error) {
+    await db
+      .update(lumaWebhookDeliveries)
+      .set({
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown webhook processing error',
+        processedAt: new Date(),
+      })
+      .where(and(
+        eq(lumaWebhookDeliveries.id, deliveryId),
+        inArray(lumaWebhookDeliveries.status, ['processing', 'failed'])
+      ))
+
+    throw error
+  }
+}
+
+function shouldProcessDuplicateDelivery (status: StoredDeliveryStatus | null | undefined): boolean {
+  return status === 'processing' || status === 'failed'
+}
+
 export async function processLumaWebhookBody (rawBody: string) {
   const deliveryId = sha256(rawBody)
   const json = JSON.parse(rawBody) as unknown
@@ -371,38 +420,28 @@ export async function processLumaWebhookBody (rawBody: string) {
     .returning({ id: lumaWebhookDeliveries.id })
 
   if (inserted.length === 0) {
+    const [existing] = await db
+      .select({ status: lumaWebhookDeliveries.status })
+      .from(lumaWebhookDeliveries)
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
+      .limit(1)
+
+    if (shouldProcessDuplicateDelivery(existing?.status)) {
+      await db
+        .update(lumaWebhookDeliveries)
+        .set({
+          status: 'processing',
+          error: null,
+        })
+        .where(eq(lumaWebhookDeliveries.id, deliveryId))
+
+      return await handleInsertedDelivery(deliveryId, payload, objectId)
+    }
+
     return { duplicate: true, eventType: payload.type, objectId }
   }
 
-  try {
-    const status = await handleWebhookPayload(payload)
-
-    await db
-      .update(lumaWebhookDeliveries)
-      .set({
-        status,
-        processedAt: new Date(),
-      })
-      .where(eq(lumaWebhookDeliveries.id, deliveryId))
-
-    if (status === 'processed') {
-      revalidatePath('/')
-      revalidatePath('/events')
-    }
-
-    return { duplicate: false, eventType: payload.type, objectId, status }
-  } catch (error) {
-    await db
-      .update(lumaWebhookDeliveries)
-      .set({
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown webhook processing error',
-        processedAt: new Date(),
-      })
-      .where(eq(lumaWebhookDeliveries.id, deliveryId))
-
-    throw error
-  }
+  return await handleInsertedDelivery(deliveryId, payload, objectId)
 }
 
 export type { LumaWebhookEventType }
