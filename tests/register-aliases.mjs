@@ -7,6 +7,7 @@ const root = path.resolve(import.meta.dirname, '..')
 const extensions = ['.ts', '.tsx', '.mts', '.js', '.mjs']
 const stubSpecifiers = {
   'next/cache': pathToFileURL(path.join(root, 'tests/stubs/next-cache.mjs')).href,
+  'next/server': pathToFileURL(path.join(root, 'tests/stubs/next-server.mjs')).href,
   'server-only': pathToFileURL(path.join(root, 'tests/stubs/server-only.mjs')).href,
 }
 
