@@ -30,8 +30,18 @@ function resolveAppSpecifier (specifier) {
   return null
 }
 
+const stubbedSpecifiers = new Map([
+  ['server-only', pathToFileURL(path.join(root, 'tests/stubs/server-only.mjs')).href],
+  ['next/cache', pathToFileURL(path.join(root, 'tests/stubs/next-cache.mjs')).href],
+])
+
 registerHooks({
   resolve (specifier, context, nextResolve) {
+    const stub = stubbedSpecifiers.get(specifier)
+    if (stub) {
+      return nextResolve(stub, context)
+    }
+
     if (specifier.startsWith('@/')) {
       const resolved = resolveAppSpecifier(specifier)
       if (resolved) {
