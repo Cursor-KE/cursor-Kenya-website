@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -226,15 +226,15 @@ async function upsertLumaGuest (data: unknown) {
       target: lumaGuests.id,
       set: {
         eventId: guest.eventId,
-        userId: guest.userId,
-        email: guest.email,
-        name: guest.name,
-        firstName: guest.firstName,
-        lastName: guest.lastName,
-        approvalStatus: guest.approvalStatus,
-        phoneNumber: guest.phoneNumber,
-        registeredAt: guest.registeredAt,
-        checkedInAt: guest.checkedInAt,
+        userId: sql`coalesce(${guest.userId}, ${lumaGuests.userId})`,
+        email: sql`coalesce(${guest.email}, ${lumaGuests.email})`,
+        name: sql`coalesce(${guest.name}, ${lumaGuests.name})`,
+        firstName: sql`coalesce(${guest.firstName}, ${lumaGuests.firstName})`,
+        lastName: sql`coalesce(${guest.lastName}, ${lumaGuests.lastName})`,
+        approvalStatus: sql`coalesce(${guest.approvalStatus}, ${lumaGuests.approvalStatus})`,
+        phoneNumber: sql`coalesce(${guest.phoneNumber}, ${lumaGuests.phoneNumber})`,
+        registeredAt: sql`coalesce(${guest.registeredAt}, ${lumaGuests.registeredAt})`,
+        checkedInAt: sql`coalesce(${guest.checkedInAt}, ${lumaGuests.checkedInAt})`,
         rawPayload: guest.rawPayload,
         updatedAt: guest.updatedAt,
       },
@@ -275,12 +275,12 @@ async function upsertLumaTicket (data: Record<string, unknown>, ticketData: unkn
       target: lumaTickets.id,
       set: {
         eventId: ticket.eventId,
-        guestId: ticket.guestId,
-        ticketTypeId: ticket.ticketTypeId,
-        name: ticket.name,
-        amount: ticket.amount,
-        currency: ticket.currency,
-        checkedInAt: ticket.checkedInAt,
+        guestId: sql`coalesce(${ticket.guestId}, ${lumaTickets.guestId})`,
+        ticketTypeId: sql`coalesce(${ticket.ticketTypeId}, ${lumaTickets.ticketTypeId})`,
+        name: sql`coalesce(${ticket.name}, ${lumaTickets.name})`,
+        amount: sql`coalesce(${ticket.amount}, ${lumaTickets.amount})`,
+        currency: sql`coalesce(${ticket.currency}, ${lumaTickets.currency})`,
+        checkedInAt: sql`coalesce(${ticket.checkedInAt}, ${lumaTickets.checkedInAt})`,
         rawPayload: ticket.rawPayload,
         updatedAt: ticket.updatedAt,
       },

@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { lumaEvents, lumaWebhookDeliveries } from '../db/schema.ts'
+import { lumaEvents, lumaGuests, lumaTickets, lumaWebhookDeliveries } from '../db/schema.ts'
 
 const databaseUrl = process.env.DATABASE_URL ?? 'postgres://cursork:cursork@127.0.0.1:5432/cursork'
 process.env.DATABASE_URL = databaseUrl
@@ -155,5 +155,99 @@ test('processed duplicate Luma deliveries are not reprocessed', async () => {
   } finally {
     await db.delete(lumaEvents).where(eq(lumaEvents.id, eventId))
     await db.delete(lumaWebhookDeliveries).where(eq(lumaWebhookDeliveries.id, deliveryId))
+  }
+})
+
+test('sparse Luma guest updates do not erase existing nullable fields', async () => {
+  const { db } = await import('../db/index.ts')
+  const { processLumaWebhookBody } = await import('../lib/luma/webhook.ts')
+  const eventId = 'evt_test_sparse_guest_update'
+  const guestId = 'guest_test_sparse_update'
+  const ticketId = 'ticket_test_sparse_update'
+  const firstPayload = {
+    type: 'guest.registered',
+    data: {
+      id: guestId,
+      event_id: eventId,
+      user_id: 'user_test_sparse_update',
+      user_email: 'ada@example.com',
+      user_name: 'Ada Lovelace',
+      user_first_name: 'Ada',
+      user_last_name: 'Lovelace',
+      approval_status: 'approved',
+      phone_number: '+254700000000',
+      registered_at: '2026-08-01T10:00:00.000Z',
+      event_ticket: {
+        id: ticketId,
+        event_ticket_type_id: 'type_test_sparse_update',
+        name: 'General Admission',
+        amount: 2500,
+        currency: 'KES',
+      },
+    },
+  }
+  const sparsePayload = {
+    type: 'guest.updated',
+    data: {
+      id: guestId,
+      event_id: eventId,
+      approval_status: 'checked_in',
+      event_ticket: {
+        id: ticketId,
+      },
+    },
+  }
+  const firstRawBody = JSON.stringify(firstPayload)
+  const sparseRawBody = JSON.stringify(sparsePayload)
+  const firstDeliveryId = hashDelivery(firstRawBody)
+  const sparseDeliveryId = hashDelivery(sparseRawBody)
+
+  await db.delete(lumaGuests).where(eq(lumaGuests.id, guestId))
+  await db.delete(lumaTickets).where(eq(lumaTickets.id, ticketId))
+  await db.delete(lumaWebhookDeliveries).where(eq(lumaWebhookDeliveries.id, firstDeliveryId))
+  await db.delete(lumaWebhookDeliveries).where(eq(lumaWebhookDeliveries.id, sparseDeliveryId))
+
+  try {
+    await processLumaWebhookBody(firstRawBody)
+    await processLumaWebhookBody(sparseRawBody)
+
+    const [guest] = await db
+      .select({
+        email: lumaGuests.email,
+        name: lumaGuests.name,
+        approvalStatus: lumaGuests.approvalStatus,
+        phoneNumber: lumaGuests.phoneNumber,
+      })
+      .from(lumaGuests)
+      .where(eq(lumaGuests.id, guestId))
+      .limit(1)
+
+    assert.deepEqual(guest, {
+      email: firstPayload.data.user_email,
+      name: firstPayload.data.user_name,
+      approvalStatus: sparsePayload.data.approval_status,
+      phoneNumber: firstPayload.data.phone_number,
+    })
+
+    const [ticket] = await db
+      .select({
+        name: lumaTickets.name,
+        amount: lumaTickets.amount,
+        currency: lumaTickets.currency,
+      })
+      .from(lumaTickets)
+      .where(eq(lumaTickets.id, ticketId))
+      .limit(1)
+
+    assert.deepEqual(ticket, {
+      name: firstPayload.data.event_ticket.name,
+      amount: firstPayload.data.event_ticket.amount,
+      currency: firstPayload.data.event_ticket.currency,
+    })
+  } finally {
+    await db.delete(lumaGuests).where(eq(lumaGuests.id, guestId))
+    await db.delete(lumaTickets).where(eq(lumaTickets.id, ticketId))
+    await db.delete(lumaWebhookDeliveries).where(eq(lumaWebhookDeliveries.id, firstDeliveryId))
+    await db.delete(lumaWebhookDeliveries).where(eq(lumaWebhookDeliveries.id, sparseDeliveryId))
   }
 })
