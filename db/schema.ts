@@ -251,6 +251,37 @@ export const frameCardSettings = pgTable('frame_card_settings', {
 
 export const formStatusEnum = pgEnum('form_status', ['draft', 'published'])
 
+export const recapStatusEnum = pgEnum('recap_status', ['draft', 'published'])
+
+export const recapPosts = pgTable(
+  'recap_posts',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    slug: text('slug').notNull().unique(),
+    excerpt: text('excerpt').notNull(),
+    content: text('content').notNull(),
+    coverImageUrl: text('cover_image_url'),
+    status: recapStatusEnum('status').notNull().default('draft'),
+    authorUserId: text('author_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    updatedByUserId: text('updated_by_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'restrict' }),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [
+    index('recap_posts_status_published_idx').on(t.status, t.publishedAt),
+    index('recap_posts_author_idx').on(t.authorUserId),
+  ]
+)
+
 export const forms = pgTable(
   'forms',
   {
