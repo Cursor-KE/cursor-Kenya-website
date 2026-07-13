@@ -11,8 +11,8 @@ const stubSpecifiers = new Map([
   ['server-only', path.join(root, 'tests/stubs/server-only.mjs')],
 ])
 
-loadEnv({ path: path.join(root, '.env') })
-loadEnv({ path: path.join(root, '.env.local'), override: true })
+loadEnv({ path: path.join(root, '.env'), quiet: true })
+loadEnv({ path: path.join(root, '.env.local'), override: true, quiet: true })
 
 function resolveAppSpecifier (specifier) {
   const basePath = path.join(root, specifier.slice(2))
