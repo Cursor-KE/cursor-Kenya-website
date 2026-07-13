@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { registerHooks } from 'node:module'
 import { pathToFileURL } from 'node:url'
+import { config as loadEnv } from 'dotenv'
 
 const root = path.resolve(import.meta.dirname, '..')
 const extensions = ['.ts', '.tsx', '.mts', '.js', '.mjs']
@@ -9,6 +10,9 @@ const stubSpecifiers = new Map([
   ['next/cache', path.join(root, 'tests/stubs/next-cache.mjs')],
   ['server-only', path.join(root, 'tests/stubs/server-only.mjs')],
 ])
+
+loadEnv({ path: path.join(root, '.env') })
+loadEnv({ path: path.join(root, '.env.local'), override: true })
 
 function resolveAppSpecifier (specifier) {
   const basePath = path.join(root, specifier.slice(2))
