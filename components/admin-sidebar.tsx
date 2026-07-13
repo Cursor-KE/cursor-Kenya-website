@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   ArrowUpRight,
   CalendarDays,
+  Coins,
   ImageIcon,
   IdCard,
   LayoutDashboard,
@@ -72,6 +73,7 @@ export function AdminChrome ({
   const items = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/events', label: 'Events', icon: CalendarDays },
+    { href: '/admin/credits', label: 'Credits', icon: Coins },
     { href: '/admin/gallery', label: 'Gallery', icon: ImageIcon },
     { href: '/admin/frame', label: 'Frame Card', icon: IdCard },
     { href: '/admin/community-showcase', label: 'Showcase', icon: Sparkles },

@@ -8,6 +8,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
 // —— Better Auth (PostgreSQL, text ids) ——
@@ -446,3 +447,139 @@ export const showcaseAiActions = pgTable(
     index('showcase_ai_actions_review_id_idx').on(t.reviewId),
   ]
 )
+
+// —— Credit distribution ——
+export const creditProviderStatusEnum = pgEnum('credit_provider_status', ['active', 'archived'])
+export const creditCampaignStatusEnum = pgEnum('credit_campaign_status', ['draft', 'active', 'paused', 'ended', 'archived'])
+export const creditGuestStatusEnum = pgEnum('credit_guest_status', ['eligible', 'removed'])
+export const creditInventoryStatusEnum = pgEnum('credit_inventory_status', ['available', 'claimed', 'revoked'])
+export const creditImportKindEnum = pgEnum('credit_import_kind', ['guests', 'inventory', 'luma_guests'])
+
+export const creditProviders = pgTable('credit_providers', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  status: creditProviderStatusEnum('status').notNull().default('active'),
+  description: text('description'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (t) => [index('credit_providers_status_idx').on(t.status)])
+
+export const creditCampaigns = pgTable('credit_campaigns', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description'),
+  status: creditCampaignStatusEnum('status').notNull().default('draft'),
+  claimStartsAt: timestamp('claim_starts_at', { withTimezone: true }),
+  claimEndsAt: timestamp('claim_ends_at', { withTimezone: true }),
+  lumaEventId: text('luma_event_id').references(() => lumaEvents.id, { onDelete: 'restrict' }),
+  createdByUserId: text('created_by_user_id').notNull().references(() => user.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (t) => [
+  index('credit_campaigns_status_idx').on(t.status),
+  index('credit_campaigns_luma_event_idx').on(t.lumaEventId),
+])
+
+export const creditCampaignProviders = pgTable('credit_campaign_providers', {
+  id: text('id').primaryKey(),
+  campaignId: text('campaign_id').notNull().references(() => creditCampaigns.id, { onDelete: 'restrict' }),
+  providerId: text('provider_id').notNull().references(() => creditProviders.id, { onDelete: 'restrict' }),
+  active: boolean('active').notNull().default(true),
+  publicInstructions: text('public_instructions'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (t) => [
+  uniqueIndex('credit_campaign_provider_unique').on(t.campaignId, t.providerId),
+  index('credit_campaign_providers_campaign_idx').on(t.campaignId),
+])
+
+export const creditGuests = pgTable('credit_guests', {
+  id: text('id').primaryKey(),
+  campaignId: text('campaign_id').notNull().references(() => creditCampaigns.id, { onDelete: 'restrict' }),
+  email: text('email').notNull(),
+  normalizedEmail: text('normalized_email').notNull(),
+  name: text('name'),
+  externalId: text('external_id'),
+  eligibilityStatus: creditGuestStatusEnum('eligibility_status').notNull().default('eligible'),
+  source: text('source').notNull().default('manual').$type<'manual' | 'csv' | 'luma'>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (t) => [
+  uniqueIndex('credit_guest_campaign_email_unique').on(t.campaignId, t.normalizedEmail),
+  index('credit_guests_campaign_status_idx').on(t.campaignId, t.eligibilityStatus),
+])
+
+export const creditInventory = pgTable('credit_inventory', {
+  id: text('id').primaryKey(),
+  providerId: text('provider_id').notNull().references(() => creditProviders.id, { onDelete: 'restrict' }),
+  campaignProviderId: text('campaign_provider_id').references(() => creditCampaignProviders.id, { onDelete: 'restrict' }),
+  fingerprint: text('fingerprint').notNull().unique(),
+  encryptedValue: text('encrypted_value').notNull(),
+  maskedValue: text('masked_value').notNull(),
+  label: text('label'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  status: creditInventoryStatusEnum('status').notNull().default('available'),
+  createdByUserId: text('created_by_user_id').notNull().references(() => user.id, { onDelete: 'restrict' }),
+  claimedAt: timestamp('claimed_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (t) => [
+  index('credit_inventory_allocation_status_idx').on(t.campaignProviderId, t.status),
+  index('credit_inventory_provider_idx').on(t.providerId),
+])
+
+export const creditClaims = pgTable('credit_claims', {
+  id: text('id').primaryKey(),
+  campaignProviderId: text('campaign_provider_id').notNull().references(() => creditCampaignProviders.id, { onDelete: 'restrict' }),
+  guestId: text('guest_id').notNull().references(() => creditGuests.id, { onDelete: 'restrict' }),
+  inventoryId: text('inventory_id').notNull().references(() => creditInventory.id, { onDelete: 'restrict' }),
+  claimedAt: timestamp('claimed_at', { withTimezone: true }).defaultNow().notNull(),
+  redeemedAt: timestamp('redeemed_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+}, (t) => [
+  uniqueIndex('credit_claim_inventory_unique').on(t.inventoryId),
+  uniqueIndex('credit_claim_guest_allocation_unique').on(t.campaignProviderId, t.guestId),
+  index('credit_claims_claimed_at_idx').on(t.claimedAt),
+])
+
+export const creditImports = pgTable('credit_imports', {
+  id: text('id').primaryKey(),
+  kind: creditImportKindEnum('kind').notNull(),
+  campaignId: text('campaign_id').references(() => creditCampaigns.id, { onDelete: 'restrict' }),
+  providerId: text('provider_id').references(() => creditProviders.id, { onDelete: 'restrict' }),
+  campaignProviderId: text('campaign_provider_id').references(() => creditCampaignProviders.id, { onDelete: 'restrict' }),
+  createdByUserId: text('created_by_user_id').notNull().references(() => user.id, { onDelete: 'restrict' }),
+  summary: jsonb('summary').notNull().$type<{ created: number; skipped: number; invalid: number; duplicates: number }>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+export const creditAuditLog = pgTable('credit_audit_log', {
+  id: text('id').primaryKey(),
+  actorUserId: text('actor_user_id').references(() => user.id, { onDelete: 'set null' }),
+  action: text('action').notNull(),
+  entityType: text('entity_type').notNull(),
+  entityId: text('entity_id').notNull(),
+  metadata: jsonb('metadata').notNull().default({}).$type<Record<string, unknown>>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index('credit_audit_entity_idx').on(t.entityType, t.entityId),
+  index('credit_audit_created_at_idx').on(t.createdAt),
+])
+
+export const creditVerifications = pgTable('credit_verifications', {
+  id: text('id').primaryKey(),
+  campaignId: text('campaign_id').notNull().references(() => creditCampaigns.id, { onDelete: 'cascade' }),
+  normalizedEmail: text('normalized_email').notNull(),
+  codeHash: text('code_hash').notNull(),
+  ipHash: text('ip_hash').notNull(),
+  attempts: integer('attempts').notNull().default(0),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  verifiedAt: timestamp('verified_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index('credit_verification_email_created_idx').on(t.campaignId, t.normalizedEmail, t.createdAt),
+  index('credit_verification_ip_created_idx').on(t.ipHash, t.createdAt),
+])
