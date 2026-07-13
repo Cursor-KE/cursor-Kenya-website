@@ -15,6 +15,9 @@ export function Footer ({
           <Link href="/events" className="hover:text-foreground">
             Events
           </Link>
+          <Link href="/recaps" className="hover:text-foreground">
+            Recaps
+          </Link>
           {showFrameLink ? (
             <Link href="/getyourcard" className="hover:text-foreground">
               Get your card

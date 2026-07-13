@@ -17,6 +17,7 @@ import {
 const baseLinks = [
   { href: '/', label: 'Home' },
   { href: '/events', label: 'Events' },
+  { href: '/recaps', label: 'Recaps' },
   { href: '/gallery', label: 'Gallery' },
   { href: '/community-showcase', label: 'Showcase' },
   { href: '/about', label: 'About' },
@@ -54,7 +55,7 @@ export function Navbar ({
               href={l.href}
               className={cn(
                 'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                pathname === l.href
+                pathname === l.href || (l.href !== '/' && pathname.startsWith(`${l.href}/`))
                   ? 'bg-secondary text-foreground shadow-[0_0_20px_-4px_var(--glow)]'
                   : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
               )}

@@ -140,3 +140,46 @@
     @apply font-sans;
   }
 }
+
+@layer components {
+  .recap-prose {
+    @apply min-w-0 text-[1.03rem] leading-8 text-foreground/90;
+  }
+
+  .recap-prose > * + * {
+    @apply mt-6;
+  }
+
+  .recap-prose h2 {
+    @apply mt-14 text-3xl font-semibold tracking-tight text-foreground;
+  }
+
+  .recap-prose h3 {
+    @apply mt-10 text-xl font-semibold tracking-tight text-foreground;
+  }
+
+  .recap-prose ul,
+  .recap-prose ol {
+    @apply space-y-2 pl-6;
+  }
+
+  .recap-prose ul {
+    @apply list-disc marker:text-primary;
+  }
+
+  .recap-prose ol {
+    @apply list-decimal marker:font-mono marker:text-primary;
+  }
+
+  .recap-prose blockquote {
+    @apply rounded-r-xl border-l-2 border-primary bg-primary/5 px-6 py-5 text-xl leading-8 text-foreground;
+  }
+
+  .recap-prose code {
+    @apply rounded bg-secondary px-1.5 py-0.5 font-mono text-[0.9em] text-primary;
+  }
+
+  .recap-prose strong {
+    @apply font-semibold text-foreground;
+  }
+}

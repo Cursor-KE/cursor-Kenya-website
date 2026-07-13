@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   FileText,
   ListChecks,
+  Newspaper,
   Quote,
   Sparkles,
   Users,
@@ -73,6 +74,7 @@ export function AdminChrome ({
   const items = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/events', label: 'Events', icon: CalendarDays },
+    { href: '/admin/recaps', label: 'Recaps', icon: Newspaper },
     { href: '/admin/credits', label: 'Credits', icon: Coins },
     { href: '/admin/gallery', label: 'Gallery', icon: ImageIcon },
     { href: '/admin/frame', label: 'Frame Card', icon: IdCard },
