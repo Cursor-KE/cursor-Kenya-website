@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db'
 import { lumaEvents } from '@/db/schema'
 import type { CommunityEvent } from '@/lib/luma/types'
@@ -63,6 +63,20 @@ async function persistFetchedEvents (events: CommunityEvent[]) {
     .onConflictDoNothing()
 }
 
+async function getCanceledLumaEventIds (eventIds: string[]): Promise<Set<string>> {
+  if (eventIds.length === 0) return new Set()
+
+  const rows = await db
+    .select({ id: lumaEvents.id })
+    .from(lumaEvents)
+    .where(and(
+      eq(lumaEvents.status, 'canceled'),
+      inArray(lumaEvents.id, eventIds)
+    ))
+
+  return new Set(rows.map((event) => event.id))
+}
+
 async function getStoredLumaEvents (): Promise<CommunityEvent[]> {
   const rows = await db
     .select()
@@ -81,11 +95,11 @@ async function getStoredLumaEvents (): Promise<CommunityEvent[]> {
 }
 
 /** Fetch all events (paginated) from Luma calendar API. */
-async function fetchLumaEventsFromApi (): Promise<CommunityEvent[]> {
+async function fetchLumaEventsFromApi (): Promise<CommunityEvent[] | null> {
   const headers = getHeaders()
   if (!headers) {
     console.warn('LUMA_API_KEY missing; skipping Luma fetch')
-    return []
+    return null
   }
   const out: CommunityEvent[] = []
   let cursor: string | undefined
@@ -104,7 +118,7 @@ async function fetchLumaEventsFromApi (): Promise<CommunityEvent[]> {
 
     if (!res.ok) {
       console.error('Luma list-events failed', res.status, await res.text())
-      break
+      return null
     }
 
     const data = (await res.json()) as LumaListResponse
@@ -122,21 +136,31 @@ async function fetchLumaEventsFromApi (): Promise<CommunityEvent[]> {
 
 /** Fetch events from webhook-backed storage, falling back to Luma API before webhooks arrive. */
 export async function getLumaEvents (): Promise<CommunityEvent[]> {
+  let stored: CommunityEvent[] = []
   try {
-    const stored = await getStoredLumaEvents()
-    if (stored.length > 0) return stored
+    stored = await getStoredLumaEvents()
   } catch (err) {
     console.error('getStoredLumaEvents', err)
   }
 
   const fetched = await fetchLumaEventsFromApi()
+  if (!fetched) return stored
+
+  let activeFetched = fetched
   try {
-    await persistFetchedEvents(fetched)
+    const canceledIds = await getCanceledLumaEventIds(fetched.map((event) => event.id))
+    activeFetched = fetched.filter((event) => !canceledIds.has(event.id))
+  } catch (err) {
+    console.error('getCanceledLumaEventIds', err)
+  }
+
+  try {
+    await persistFetchedEvents(activeFetched)
   } catch (err) {
     console.error('persistFetchedEvents', err)
   }
 
-  return fetched
+  return activeFetched
 }
 
 export async function getNextUpcomingEvent (): Promise<CommunityEvent | null> {
