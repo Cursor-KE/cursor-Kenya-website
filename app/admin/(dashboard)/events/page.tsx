@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { asc, desc, eq, gte, sql } from 'drizzle-orm'
+import { desc, eq, gte, sql } from 'drizzle-orm'
 import { Activity, ArrowUpRight, CalendarClock, CheckCircle2, Ticket, Users } from 'lucide-react'
 import { AdminPageShell } from '@/components/admin-page-shell'
 import { Badge } from '@/components/ui/badge'
@@ -101,7 +101,7 @@ export default async function AdminEventsPage () {
       .select({ count: sql<number>`count(*)::int` })
       .from(lumaWebhookDeliveries)
       .where(eq(lumaWebhookDeliveries.status, 'failed')),
-    db.select().from(lumaEvents).orderBy(asc(lumaEvents.startAt)).limit(50),
+    db.select().from(lumaEvents).orderBy(desc(lumaEvents.startAt)).limit(50),
     db
       .select()
       .from(lumaWebhookDeliveries)
