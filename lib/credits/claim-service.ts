@@ -4,7 +4,7 @@ import { and, count, desc, eq, gt, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { db } from '@/db'
 import { creditCampaigns, creditGuests, creditVerifications } from '@/db/schema'
-import { sendEmail } from '@/lib/email/nodemailer'
+import { isEmailDeliveryConfigured, sendEmail } from '@/lib/email/nodemailer'
 import {
   hashVerificationValue,
   normalizeEmail,
@@ -39,6 +39,9 @@ export async function requestClaimVerification (input: { campaignSlug: string; e
   if ((emailRate?.value ?? 0) >= 3 || (ipRate?.value ?? 0) >= 10) {
     return { ok: true, message: GENERIC_VERIFICATION_MESSAGE }
   }
+  if (!isEmailDeliveryConfigured()) {
+    return { ok: true, message: GENERIC_VERIFICATION_MESSAGE }
+  }
 
   const code = numericCode()
   const verificationId = nanoid()
@@ -52,12 +55,16 @@ export async function requestClaimVerification (input: { campaignSlug: string; e
     eq(creditGuests.campaignId, campaign.id), eq(creditGuests.normalizedEmail, normalizedEmail), eq(creditGuests.eligibilityStatus, 'eligible'),
   )).limit(1)
   if (eligibleGuest) {
-    await sendEmail({
+    const delivered = await sendEmail({
       to: normalizedEmail,
       subject: `Your ${campaign.name} credit verification code`,
       text: `Your verification code is ${code}. It expires in ${VERIFICATION_TTL_MINUTES} minutes. If you did not request it, ignore this email.`,
       html: `<p>Your verification code is <strong>${code}</strong>.</p><p>It expires in ${VERIFICATION_TTL_MINUTES} minutes. If you did not request it, ignore this email.</p>`,
     })
+    if (!delivered) {
+      await db.delete(creditVerifications).where(eq(creditVerifications.id, verificationId))
+      return { ok: true, message: GENERIC_VERIFICATION_MESSAGE }
+    }
   }
   return { ok: true, message: GENERIC_VERIFICATION_MESSAGE, verificationId }
 }
