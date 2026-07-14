@@ -48,7 +48,7 @@ Use **`pnpm db:probe`** to verify connectivity and pooler/SSL behavior without s
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `DATABASE_URL` | Yes (runtime + migrate) | Postgres connection string for the app and migrations ([`lib/db/postgres.ts`](lib/db/postgres.ts), [`scripts/migrate.cjs`](scripts/migrate.cjs)). |
-| `DIRECT_URL` or `DATABASE_MIGRATE_URL` | Often (hosted DB) | **Direct/session** URL (often port `:5432`) for Drizzle CLI and `db:migrate`. Transaction poolers (e.g. port `:6543`) are rejected for migrations—see below. |
+| `DIRECT_URL` or `DATABASE_MIGRATE_URL` | Often (hosted DB) | **Direct/session** URL (often port `:5432`) for the long-lived development server, build-time static generation, Drizzle CLI, and `db:migrate`. Production runtime continues to use `DATABASE_URL`. Transaction poolers (e.g. port `:6543`) are rejected for migrations—see below. |
 | `DATABASE_PREPARED_STATEMENTS` | If pooler errors | Set to `false` if you see prepared-statement errors with a transaction pooler. |
 | `BETTER_AUTH_SECRET` | Production | Secret for Better Auth (min length enforced in production). |
 | `BETTER_AUTH_URL` | Production | Public origin of the app (e.g. `https://example.com`). Defaults to `http://localhost:3000` in development. |

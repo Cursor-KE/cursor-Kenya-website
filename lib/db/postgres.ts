@@ -3,17 +3,25 @@ import postgres from 'postgres'
 import * as schema from '@/db/schema'
 
 /**
- * Drizzle + postgres-js. Use `DATABASE_URL` (Postgres connection string).
+ * Drizzle + postgres-js. Production runtime uses `DATABASE_URL`; development
+ * and production builds prefer `DIRECT_URL` when available because they are
+ * long-lived, query-heavy processes.
  * @see https://orm.drizzle.team/docs/get-started-postgresql#postgresjs
  *
  * Transaction poolers (PgBouncer, many serverless poolers) do not support prepared
  * statements — set `DATABASE_PREPARED_STATEMENTS=false` or use a URL with port
  * `6543` / hostname containing `pooler` to disable prepare automatically.
  */
-const connectionString = process.env.DATABASE_URL
-if (!connectionString) {
+const databaseUrl = process.env.DATABASE_URL
+if (!databaseUrl) {
   throw new Error('DATABASE_URL is not set')
 }
+
+const shouldUseDirectUrl = process.env.NODE_ENV !== 'production' ||
+  process.env.NEXT_PHASE === 'phase-production-build'
+const connectionString = shouldUseDirectUrl && process.env.DIRECT_URL
+  ? process.env.DIRECT_URL
+  : databaseUrl
 
 function parsePgUrl (dsn: string): URL | null {
   try {
@@ -65,15 +73,28 @@ const connectTimeoutSeconds = parseTimeoutSeconds(
 /** Cap parallel connections (Neon free tier); override with DATABASE_PG_MAX. */
 const maxConnections = parsePositiveInt(
   process.env.DATABASE_PG_MAX,
-  isLocalHost(host) ? 10 : 5
+  looksLikeTxnPooler ? 2 : isLocalHost(host) ? 10 : 5
 )
 
-const client = postgres(connectionString, {
+type PostgresClient = ReturnType<typeof postgres>
+
+const globalForPostgres = globalThis as typeof globalThis & {
+  cursorKenyaPostgresClient?: PostgresClient
+}
+
+/**
+ * Next dev compiles route entries independently. Without a global singleton,
+ * every admin page can create its own postgres.js pool and exhaust a remote
+ * transaction pooler while navigating between routes.
+ */
+const client = globalForPostgres.cursorKenyaPostgresClient ?? postgres(connectionString, {
   max: maxConnections,
   connect_timeout: connectTimeoutSeconds,
   idle_timeout: 20,
   ...(useSsl ? { ssl: 'require' as const } : {}),
   ...(!usePrepare ? { prepare: false } : {}),
 })
+
+globalForPostgres.cursorKenyaPostgresClient = client
 
 export const db = drizzle(client, { schema })

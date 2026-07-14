@@ -2,6 +2,7 @@ import 'server-only'
 
 import { eq } from 'drizzle-orm'
 import { headers } from 'next/headers'
+import { cache } from 'react'
 import { db } from '@/db'
 import { user } from '@/db/schema'
 import { auth } from '@/lib/auth'
@@ -30,7 +31,7 @@ function sleep (ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function getSessionWithRetry () {
+const getSessionWithRetry = cache(async function getSessionWithRetry () {
   const hdrs = await headers()
   let session: Awaited<ReturnType<typeof auth.api.getSession>> = null
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -49,7 +50,7 @@ async function getSessionWithRetry () {
     }
   }
   return session
-}
+})
 
 /**
  * Loads the session; throws marked errors so callers can tell auth vs infra apart.
@@ -64,7 +65,7 @@ export async function requireSession () {
   return session
 }
 
-export async function getOptionalCurrentUser () {
+export const getOptionalCurrentUser = cache(async function getOptionalCurrentUser () {
   const session = await getSessionWithRetry()
   if (!session?.user) return null
 
@@ -80,17 +81,17 @@ export async function getOptionalCurrentUser () {
   }
 
   return { session, user: currentUser }
-}
+})
 
-export async function requireCurrentUser () {
+export const requireCurrentUser = cache(async function requireCurrentUser () {
   const currentUser = await getOptionalCurrentUser()
   if (!currentUser) {
     throw new Error(SESSION_UNAUTHORIZED)
   }
   return currentUser
-}
+})
 
-export async function requireApprovedAdmin () {
+export const requireApprovedAdmin = cache(async function requireApprovedAdmin () {
   const currentUser = await requireCurrentUser()
 
   if (currentUser.user.adminStatus === 'pending') {
@@ -102,9 +103,9 @@ export async function requireApprovedAdmin () {
   }
 
   return currentUser
-}
+})
 
-export async function requireSuperUser () {
+export const requireSuperUser = cache(async function requireSuperUser () {
   const currentUser = await requireApprovedAdmin()
 
   if (currentUser.user.role !== 'super_user') {
@@ -112,4 +113,4 @@ export async function requireSuperUser () {
   }
 
   return currentUser
-}
+})
