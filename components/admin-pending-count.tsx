@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm'
 import { Badge } from '@/components/ui/badge'
 import { db } from '@/db'
 import { user } from '@/db/schema'
+import { requireApprovedAdmin } from '@/lib/auth/session'
 
 export async function getPendingAdminCount () {
   const rows = await db
@@ -13,6 +14,9 @@ export async function getPendingAdminCount () {
 }
 
 export async function PendingAdminNavBadge () {
+  const currentUser = await requireApprovedAdmin()
+  if (currentUser.user.role !== 'super_user') return null
+
   const count = await getPendingAdminCount()
   if (count <= 0) return null
 
@@ -24,6 +28,9 @@ export async function PendingAdminNavBadge () {
 }
 
 export async function PendingAdminMobileBadge () {
+  const currentUser = await requireApprovedAdmin()
+  if (currentUser.user.role !== 'super_user') return null
+
   const count = await getPendingAdminCount()
   if (count <= 0) return null
 

@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { asc, desc, eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
@@ -11,11 +12,12 @@ import {
 } from '@/db/schema'
 import { requireApprovedAdmin } from '@/lib/auth/session'
 import { AdminPageShell } from '@/components/admin-page-shell'
+import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { CreditsAdminClient } from './credits-admin-client'
 
 async function CreditsAdminContent () {
   const { user } = await requireApprovedAdmin()
-  const [providers, campaigns, allocations, guests, inventory, luma, metrics] = await Promise.all([
+  const [providers, campaigns, allocations, guests, inventory, luma, metrics, claimCounts] = await Promise.all([
     db.select().from(creditProviders).orderBy(asc(creditProviders.name)),
     db.select().from(creditCampaigns).orderBy(desc(creditCampaigns.createdAt)),
     db.select({
@@ -47,10 +49,10 @@ async function CreditsAdminContent () {
         (SELECT count(*)::int FROM credit_claims) AS claims,
         (SELECT count(*)::int FROM credit_claims WHERE redeemed_at IS NOT NULL) AS redemptions
     `),
+    db.select({ campaignProviderId: creditClaims.campaignProviderId, value: sql<number>`count(*)::int` })
+      .from(creditClaims).groupBy(creditClaims.campaignProviderId),
   ])
 
-  const claimCounts = await db.select({ campaignProviderId: creditClaims.campaignProviderId, value: sql<number>`count(*)::int` })
-    .from(creditClaims).groupBy(creditClaims.campaignProviderId)
   const metric = metrics[0] as Record<string, number> | undefined
 
   return (
@@ -78,13 +80,15 @@ async function CreditsAdminContent () {
   )
 }
 
-export default async function CreditsAdminPage () {
+export default function CreditsAdminPage () {
   return (
     <AdminPageShell
       title="Credit operations"
       description="Distribute provider credits without mixing claims, confirmed redemptions, or Luma attendance."
     >
-      {await CreditsAdminContent()}
+      <Suspense fallback={<AdminContentSkeleton variant="metrics" />}>
+        <CreditsAdminContent />
+      </Suspense>
     </AdminPageShell>
   )
 }

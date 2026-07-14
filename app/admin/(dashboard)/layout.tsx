@@ -5,6 +5,7 @@ import {
   PendingAdminMobileBadge,
   PendingAdminNavBadge,
 } from '@/components/admin-pending-count'
+import { AdminPageLoadingSkeleton } from '@/components/admin-page-skeleton'
 import {
   ADMIN_APPROVAL_REQUIRED,
   ADMIN_FORBIDDEN,
@@ -12,19 +13,18 @@ import {
   requireApprovedAdmin,
 } from '@/lib/auth/session'
 
-export default async function AdminDashboardLayout ({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  let currentUser: Awaited<ReturnType<typeof requireApprovedAdmin>>
-
+/**
+ * Auth uses headers()/cookies, so awaiting it in the layout body blocks
+ * loading.tsx and freezes the previous page during soft navigations.
+ * Keep the chrome outside the gate and suspend only the page slot.
+ */
+async function AdminAccessGate ({ children }: { children: React.ReactNode }) {
   try {
-    currentUser = await requireApprovedAdmin()
+    await requireApprovedAdmin()
   } catch (error) {
     if (
       error instanceof Error &&
-      (error.message === SESSION_UNAUTHORIZED)
+      error.message === SESSION_UNAUTHORIZED
     ) {
       redirect('/admin/login')
     }
@@ -39,27 +39,30 @@ export default async function AdminDashboardLayout ({
     throw error
   }
 
-  const isSuperUser = currentUser.user.role === 'super_user'
+  return children
+}
 
+export default function AdminDashboardLayout ({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <AdminChrome
-      currentUserRole={currentUser.user.role}
-      pendingNavBadge={
-        isSuperUser ? (
-          <Suspense fallback={null}>
-            <PendingAdminNavBadge />
-          </Suspense>
-        ) : null
-      }
-      pendingMobileBadge={
-        isSuperUser ? (
-          <Suspense fallback={null}>
-            <PendingAdminMobileBadge />
-          </Suspense>
-        ) : null
-      }
+      pendingNavBadge={(
+        <Suspense fallback={null}>
+          <PendingAdminNavBadge />
+        </Suspense>
+      )}
+      pendingMobileBadge={(
+        <Suspense fallback={null}>
+          <PendingAdminMobileBadge />
+        </Suspense>
+      )}
     >
-      {children}
+      <Suspense fallback={<AdminPageLoadingSkeleton variant="default" />}>
+        <AdminAccessGate>{children}</AdminAccessGate>
+      </Suspense>
     </AdminChrome>
   )
 }

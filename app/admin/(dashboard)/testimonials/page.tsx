@@ -1,4 +1,6 @@
+import { Suspense } from 'react'
 import { AdminPageShell } from '@/components/admin-page-shell'
+import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { getAllTestimonialsForAdmin } from '@/lib/queries'
 import {
   TestimonialsAdminClient,
@@ -23,14 +25,16 @@ async function AdminTestimonialsContent () {
   return <TestimonialsAdminClient initial={initial} />
 }
 
-export default async function AdminTestimonialsPage () {
+export default function AdminTestimonialsPage () {
   return (
     <AdminPageShell
       title="Testimonials"
       description="Quotes from form responses that admins have shared. Published testimonials show on the homepage."
       contentClassName="max-w-4xl"
     >
-      {await AdminTestimonialsContent()}
+      <Suspense fallback={<AdminContentSkeleton variant="table" />}>
+        <AdminTestimonialsContent />
+      </Suspense>
     </AdminPageShell>
   )
 }

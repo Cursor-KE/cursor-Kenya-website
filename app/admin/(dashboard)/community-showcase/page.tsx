@@ -1,5 +1,7 @@
+import { Suspense } from 'react'
 import { ShowcaseAdminClient } from '@/app/admin/(dashboard)/community-showcase/showcase-admin-client'
 import { AdminPageShell } from '@/components/admin-page-shell'
+import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { getAllCommunityShowcaseForAdmin, getLatestShowcaseAiReviewsForAdmin } from '@/lib/queries'
 
 const ADMIN_SHOWCASE_QUERY_TIMEOUT_MS = 12_000
@@ -44,13 +46,15 @@ async function AdminCommunityShowcaseContent () {
   )
 }
 
-export default async function AdminCommunityShowcasePage () {
+export default function AdminCommunityShowcasePage () {
   return (
     <AdminPageShell
       title="Community showcase"
       description="Review submissions, approve or reject, feature approved projects, and set display order."
     >
-      {await AdminCommunityShowcaseContent()}
+      <Suspense fallback={<AdminContentSkeleton variant="table" />}>
+        <AdminCommunityShowcaseContent />
+      </Suspense>
     </AdminPageShell>
   )
 }

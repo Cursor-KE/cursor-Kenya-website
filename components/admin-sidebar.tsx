@@ -18,6 +18,7 @@ import {
   Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { authClient } from '@/lib/auth-client'
 import { AuthSignOutButton } from '@/components/auth-sign-out-button'
 import {
   Sidebar,
@@ -78,16 +79,17 @@ function AdminNavLink ({
 
 export function AdminChrome ({
   children,
-  currentUserRole,
   pendingNavBadge,
   pendingMobileBadge,
 }: {
   children: React.ReactNode
-  currentUserRole: 'super_user' | 'admin'
   pendingNavBadge?: React.ReactNode
   pendingMobileBadge?: React.ReactNode
 }) {
   const pathname = usePathname()
+  const { data: session } = authClient.useSession()
+  const sessionRole = (session?.user as { role?: string } | undefined)?.role
+  const isSuperUser = sessionRole === 'super_user'
   const items = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/events', label: 'Events', icon: CalendarDays },
@@ -99,7 +101,7 @@ export function AdminChrome ({
     { href: '/admin/forms', label: 'Forms', icon: FileText },
     { href: '/admin/responses', label: 'Responses', icon: ListChecks },
     { href: '/admin/testimonials', label: 'Testimonials', icon: Quote },
-    ...(currentUserRole === 'super_user'
+    ...(isSuperUser
       ? [{ href: '/admin/users', label: 'Admin Users', icon: Users }]
       : []),
   ]

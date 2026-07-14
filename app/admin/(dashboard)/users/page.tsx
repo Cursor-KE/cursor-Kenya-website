@@ -1,10 +1,13 @@
+import { Suspense } from 'react'
 import { type InferSelectModel, desc, eq } from 'drizzle-orm'
+import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { AdminPageShell } from '@/components/admin-page-shell'
+import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { db } from '@/db'
 import { user } from '@/db/schema'
 import { approveAdminUser, rejectAdminUser } from '@/lib/actions/admin-users'
-import { requireSuperUser } from '@/lib/auth/session'
+import { ADMIN_FORBIDDEN, requireSuperUser } from '@/lib/auth/session'
 
 type AdminUserRow = InferSelectModel<typeof user>
 
@@ -128,15 +131,27 @@ async function AdminUsersContent () {
   )
 }
 
-export default async function AdminUsersPage () {
-  await requireSuperUser()
+async function AdminUsersGate () {
+  try {
+    await requireSuperUser()
+  } catch (error) {
+    if (error instanceof Error && error.message === ADMIN_FORBIDDEN) {
+      redirect('/admin')
+    }
+    throw error
+  }
+  return <AdminUsersContent />
+}
 
+export default function AdminUsersPage () {
   return (
     <AdminPageShell
       title="Admin users"
       description="Review admin signup requests, approve access, and keep track of which accounts are still waiting."
     >
-      {await AdminUsersContent()}
+      <Suspense fallback={<AdminContentSkeleton variant="default" />}>
+        <AdminUsersGate />
+      </Suspense>
     </AdminPageShell>
   )
 }
