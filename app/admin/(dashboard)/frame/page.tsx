@@ -1,6 +1,4 @@
-import { Suspense } from 'react'
 import { AdminPageShell } from '@/components/admin-page-shell'
-import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { getFrameCardSettings } from '@/lib/queries'
 import { FrameCardAdminClient } from '@/app/admin/(dashboard)/frame/frame-card-admin-client'
 
@@ -9,15 +7,13 @@ async function AdminFrameCardContent () {
   return <FrameCardAdminClient settings={settings} />
 }
 
-export default function AdminFrameCardPage () {
+export default async function AdminFrameCardPage () {
   return (
     <AdminPageShell
       title="Frame Card"
       description="Control the public meetup card title and whether the card generator is visible."
     >
-      <Suspense fallback={<AdminContentSkeleton variant="table" />}>
-        <AdminFrameCardContent />
-      </Suspense>
+      {await AdminFrameCardContent()}
     </AdminPageShell>
   )
 }

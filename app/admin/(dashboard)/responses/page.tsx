@@ -1,9 +1,7 @@
-import { Suspense } from 'react'
 import Link from 'next/link'
 import { desc, eq } from 'drizzle-orm'
 import { ArrowUpRight, ListChecks } from 'lucide-react'
 import { AdminPageShell } from '@/components/admin-page-shell'
-import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -77,15 +75,13 @@ async function AdminResponsesContent () {
   )
 }
 
-export default function AdminResponsesPage () {
+export default async function AdminResponsesPage () {
   return (
     <AdminPageShell
       title="Responses"
       description="Review recent form submissions and route useful answers into follow-up workflows."
     >
-      <Suspense fallback={<AdminContentSkeleton variant="table" />}>
-        <AdminResponsesContent />
-      </Suspense>
+      {await AdminResponsesContent()}
     </AdminPageShell>
   )
 }

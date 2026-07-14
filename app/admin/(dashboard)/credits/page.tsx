@@ -1,4 +1,3 @@
-import { Suspense } from 'react'
 import { asc, desc, eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
@@ -12,7 +11,6 @@ import {
 } from '@/db/schema'
 import { requireApprovedAdmin } from '@/lib/auth/session'
 import { AdminPageShell } from '@/components/admin-page-shell'
-import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { CreditsAdminClient } from './credits-admin-client'
 
 async function CreditsAdminContent () {
@@ -80,15 +78,13 @@ async function CreditsAdminContent () {
   )
 }
 
-export default function CreditsAdminPage () {
+export default async function CreditsAdminPage () {
   return (
     <AdminPageShell
       title="Credit operations"
       description="Distribute provider credits without mixing claims, confirmed redemptions, or Luma attendance."
     >
-      <Suspense fallback={<AdminContentSkeleton variant="metrics" />}>
-        <CreditsAdminContent />
-      </Suspense>
+      {await CreditsAdminContent()}
     </AdminPageShell>
   )
 }

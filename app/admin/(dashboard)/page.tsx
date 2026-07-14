@@ -1,4 +1,3 @@
-import { Suspense } from 'react'
 import { desc, eq, sql } from 'drizzle-orm'
 import Link from 'next/link'
 import {
@@ -20,7 +19,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { AdminPageShell } from '@/components/admin-page-shell'
-import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { db } from '@/db'
@@ -273,15 +271,13 @@ async function AdminDashboardContent () {
   )
 }
 
-export default function AdminDashboardPage () {
+export default async function AdminDashboardPage () {
   return (
     <AdminPageShell
       title="Operations dashboard"
       description="A high-signal overview of content inventory, submission flow, and admin access work."
     >
-      <Suspense fallback={<AdminContentSkeleton variant="dashboard" />}>
-        <AdminDashboardContent />
-      </Suspense>
+      {await AdminDashboardContent()}
     </AdminPageShell>
   )
 }

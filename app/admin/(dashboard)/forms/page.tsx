@@ -1,11 +1,9 @@
-import { Suspense } from 'react'
 import Link from 'next/link'
 import { desc } from 'drizzle-orm'
 import { ArrowUpRight, FileText, Plus } from 'lucide-react'
 import { db } from '@/db'
 import { forms } from '@/db/schema'
 import { AdminPageShell } from '@/components/admin-page-shell'
-import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -67,7 +65,7 @@ async function AdminFormsListContent () {
   )
 }
 
-export default function AdminFormsListPage () {
+export default async function AdminFormsListPage () {
   return (
     <AdminPageShell
       title="Forms"
@@ -86,9 +84,7 @@ export default function AdminFormsListPage () {
         </Link>
       )}
     >
-      <Suspense fallback={<AdminContentSkeleton variant="table" />}>
-        <AdminFormsListContent />
-      </Suspense>
+      {await AdminFormsListContent()}
     </AdminPageShell>
   )
 }

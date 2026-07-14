@@ -1,7 +1,5 @@
-import { Suspense } from 'react'
 import { desc } from 'drizzle-orm'
 import { AdminPageShell } from '@/components/admin-page-shell'
-import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { db } from '@/db'
 import { images, videos } from '@/db/schema'
 import { GalleryAdminClient } from '@/app/admin/(dashboard)/gallery/gallery-admin-client'
@@ -15,15 +13,13 @@ async function AdminGalleryContent () {
   return <GalleryAdminClient photos={photoRows} videos={videoRows} />
 }
 
-export default function AdminGalleryPage () {
+export default async function AdminGalleryPage () {
   return (
     <AdminPageShell
       title="Gallery"
       description="Upload photos to Cloudinary and curate YouTube videos."
     >
-      <Suspense fallback={<AdminContentSkeleton />}>
-        <AdminGalleryContent />
-      </Suspense>
+      {await AdminGalleryContent()}
     </AdminPageShell>
   )
 }

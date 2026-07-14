@@ -1,9 +1,7 @@
-import { Suspense } from 'react'
 import Link from 'next/link'
 import { desc, eq, gte, sql } from 'drizzle-orm'
 import { Activity, ArrowUpRight, CalendarClock, CheckCircle2, Ticket, Users } from 'lucide-react'
 import { AdminPageShell } from '@/components/admin-page-shell'
-import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -73,7 +71,7 @@ function StatCard ({
   )
 }
 
-async function AdminEventsContent () {
+export default async function AdminEventsPage () {
   const now = new Date()
 
   const [
@@ -121,7 +119,10 @@ async function AdminEventsContent () {
   const lastDelivery = recentDeliveries[0]?.receivedAt ?? null
 
   return (
-    <>
+    <AdminPageShell
+      title="Events"
+      description="Monitor Luma event snapshots, webhook delivery health, and normalized guest registrations."
+    >
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard
           label="Active events"
@@ -294,19 +295,6 @@ async function AdminEventsContent () {
           </CardContent>
         </Card>
       </div>
-    </>
-  )
-}
-
-export default function AdminEventsPage () {
-  return (
-    <AdminPageShell
-      title="Events"
-      description="Monitor Luma event snapshots, webhook delivery health, and normalized guest registrations."
-    >
-      <Suspense fallback={<AdminContentSkeleton variant="metrics" />}>
-        <AdminEventsContent />
-      </Suspense>
     </AdminPageShell>
   )
 }

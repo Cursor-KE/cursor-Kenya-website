@@ -1,11 +1,9 @@
-import { Suspense } from 'react'
 import { desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { ArrowUpRight, FilePenLine, Plus } from 'lucide-react'
 import { db } from '@/db'
 import { recapPosts, user } from '@/db/schema'
 import { AdminPageShell } from '@/components/admin-page-shell'
-import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -98,7 +96,7 @@ async function AdminRecapsContent () {
   )
 }
 
-export default function AdminRecapsPage () {
+export default async function AdminRecapsPage () {
   return (
     <AdminPageShell
       title="Recap posts"
@@ -110,9 +108,7 @@ export default function AdminRecapsPage () {
         </Link>
       )}
     >
-      <Suspense fallback={<AdminContentSkeleton variant="table" />}>
-        <AdminRecapsContent />
-      </Suspense>
+      {await AdminRecapsContent()}
     </AdminPageShell>
   )
 }

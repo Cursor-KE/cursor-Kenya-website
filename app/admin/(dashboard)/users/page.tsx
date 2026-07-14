@@ -1,8 +1,6 @@
-import { Suspense } from 'react'
 import { type InferSelectModel, desc, eq } from 'drizzle-orm'
 import { Button } from '@/components/ui/button'
 import { AdminPageShell } from '@/components/admin-page-shell'
-import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { db } from '@/db'
 import { user } from '@/db/schema'
 import { approveAdminUser, rejectAdminUser } from '@/lib/actions/admin-users'
@@ -138,9 +136,7 @@ export default async function AdminUsersPage () {
       title="Admin users"
       description="Review admin signup requests, approve access, and keep track of which accounts are still waiting."
     >
-      <Suspense fallback={<AdminContentSkeleton variant="table" />}>
-        <AdminUsersContent />
-      </Suspense>
+      {await AdminUsersContent()}
     </AdminPageShell>
   )
 }
