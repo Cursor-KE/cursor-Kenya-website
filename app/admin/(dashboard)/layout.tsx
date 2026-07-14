@@ -1,8 +1,10 @@
-import { eq, sql } from 'drizzle-orm'
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { AdminChrome } from '@/components/admin-sidebar'
-import { db } from '@/db'
-import { user } from '@/db/schema'
+import {
+  PendingAdminMobileBadge,
+  PendingAdminNavBadge,
+} from '@/components/admin-pending-count'
 import {
   ADMIN_APPROVAL_REQUIRED,
   ADMIN_FORBIDDEN,
@@ -15,25 +17,10 @@ export default async function AdminDashboardLayout ({
 }: {
   children: React.ReactNode
 }) {
-  try {
-    const currentUser = await requireApprovedAdmin()
-    const pendingAdminCount = currentUser.user.role === 'super_user'
-      ? (
-          await db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(user)
-            .where(eq(user.adminStatus, 'pending'))
-        )[0]?.count ?? 0
-      : 0
+  let currentUser: Awaited<ReturnType<typeof requireApprovedAdmin>>
 
-    return (
-      <AdminChrome
-        currentUserRole={currentUser.user.role}
-        pendingAdminCount={pendingAdminCount}
-      >
-        {children}
-      </AdminChrome>
-    )
+  try {
+    currentUser = await requireApprovedAdmin()
   } catch (error) {
     if (
       error instanceof Error &&
@@ -51,4 +38,28 @@ export default async function AdminDashboardLayout ({
 
     throw error
   }
+
+  const isSuperUser = currentUser.user.role === 'super_user'
+
+  return (
+    <AdminChrome
+      currentUserRole={currentUser.user.role}
+      pendingNavBadge={
+        isSuperUser ? (
+          <Suspense fallback={null}>
+            <PendingAdminNavBadge />
+          </Suspense>
+        ) : null
+      }
+      pendingMobileBadge={
+        isSuperUser ? (
+          <Suspense fallback={null}>
+            <PendingAdminMobileBadge />
+          </Suspense>
+        ) : null
+      }
+    >
+      {children}
+    </AdminChrome>
+  )
 }

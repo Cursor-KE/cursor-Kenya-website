@@ -1,6 +1,8 @@
+import { Suspense } from 'react'
 import { type InferSelectModel, desc, eq } from 'drizzle-orm'
 import { Button } from '@/components/ui/button'
 import { AdminPageShell } from '@/components/admin-page-shell'
+import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { db } from '@/db'
 import { user } from '@/db/schema'
 import { approveAdminUser, rejectAdminUser } from '@/lib/actions/admin-users'
@@ -68,7 +70,7 @@ function UserSection ({
       {rows.length === 0 ? (
         <p className="mt-6 text-sm text-muted-foreground">No users in this group.</p>
       ) : (
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 flex flex-col gap-4">
           {rows.map((row) => (
             <div
               key={row.id}
@@ -94,9 +96,7 @@ function UserSection ({
   )
 }
 
-export default async function AdminUsersPage () {
-  await requireSuperUser()
-
+async function AdminUsersContent () {
   const [pendingUsers, approvedUsers, rejectedUsers] = await Promise.all([
     getUsersByStatus('pending'),
     getUsersByStatus('approved'),
@@ -104,33 +104,43 @@ export default async function AdminUsersPage () {
   ])
 
   return (
+    <div className="flex flex-col gap-6">
+      <UserSection
+        title="Pending approvals"
+        description="New admin signups appear here until you review them."
+        rows={pendingUsers}
+        canApprove
+        canReject
+      />
+      <UserSection
+        title="Approved admins"
+        description="These admins can already access the dashboard."
+        rows={approvedUsers.filter((row) => row.role !== 'super_user')}
+        canApprove={false}
+        canReject
+      />
+      <UserSection
+        title="Rejected requests"
+        description="You can approve a rejected request later if access should be restored."
+        rows={rejectedUsers}
+        canApprove
+        canReject={false}
+      />
+    </div>
+  )
+}
+
+export default async function AdminUsersPage () {
+  await requireSuperUser()
+
+  return (
     <AdminPageShell
       title="Admin users"
       description="Review admin signup requests, approve access, and keep track of which accounts are still waiting."
     >
-      <div className="space-y-6">
-        <UserSection
-          title="Pending approvals"
-          description="New admin signups appear here until you review them."
-          rows={pendingUsers}
-          canApprove
-          canReject
-        />
-        <UserSection
-          title="Approved admins"
-          description="These admins can already access the dashboard."
-          rows={approvedUsers.filter((row) => row.role !== 'super_user')}
-          canApprove={false}
-          canReject
-        />
-        <UserSection
-          title="Rejected requests"
-          description="You can approve a rejected request later if access should be restored."
-          rows={rejectedUsers}
-          canApprove
-          canReject={false}
-        />
-      </div>
+      <Suspense fallback={<AdminContentSkeleton variant="table" />}>
+        <AdminUsersContent />
+      </Suspense>
     </AdminPageShell>
   )
 }

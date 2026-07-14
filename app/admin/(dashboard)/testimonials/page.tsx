@@ -1,11 +1,13 @@
+import { Suspense } from 'react'
 import { AdminPageShell } from '@/components/admin-page-shell'
+import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { getAllTestimonialsForAdmin } from '@/lib/queries'
 import {
   TestimonialsAdminClient,
   type AdminTestimonial,
 } from './testimonials-admin-client'
 
-export default async function AdminTestimonialsPage () {
+async function AdminTestimonialsContent () {
   const rows = await getAllTestimonialsForAdmin()
   const initial: AdminTestimonial[] = rows.map((r) => ({
     id: r.id,
@@ -20,13 +22,19 @@ export default async function AdminTestimonialsPage () {
     createdAt: r.createdAt.toISOString(),
   }))
 
+  return <TestimonialsAdminClient initial={initial} />
+}
+
+export default function AdminTestimonialsPage () {
   return (
     <AdminPageShell
       title="Testimonials"
       description="Quotes from form responses that admins have shared. Published testimonials show on the homepage."
       contentClassName="max-w-4xl"
     >
-      <TestimonialsAdminClient initial={initial} />
+      <Suspense fallback={<AdminContentSkeleton variant="table" />}>
+        <AdminTestimonialsContent />
+      </Suspense>
     </AdminPageShell>
   )
 }

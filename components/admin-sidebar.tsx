@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useLinkStatus } from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   ArrowUpRight,
@@ -35,7 +36,20 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { Badge } from '@/components/ui/badge'
+
+function AdminNavPendingHint () {
+  const { pending } = useLinkStatus()
+
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'size-1.5 shrink-0 rounded-full bg-primary shadow-[0_0_12px_var(--glow-strong)] transition-opacity group-data-[collapsible=icon]:hidden',
+        pending ? 'opacity-100 animate-pulse' : 'opacity-0'
+      )}
+    />
+  )
+}
 
 function AdminNavLink ({
   href,
@@ -51,6 +65,7 @@ function AdminNavLink ({
   return (
     <Link
       href={href}
+      prefetch
       className={className}
       onClick={() => {
         if (isMobile) setOpenMobile(false)
@@ -64,11 +79,13 @@ function AdminNavLink ({
 export function AdminChrome ({
   children,
   currentUserRole,
-  pendingAdminCount,
+  pendingNavBadge,
+  pendingMobileBadge,
 }: {
   children: React.ReactNode
   currentUserRole: 'super_user' | 'admin'
-  pendingAdminCount: number
+  pendingNavBadge?: React.ReactNode
+  pendingMobileBadge?: React.ReactNode
 }) {
   const pathname = usePathname()
   const items = [
@@ -93,6 +110,7 @@ export function AdminChrome ({
         <SidebarHeader className="gap-3 border-b border-sidebar-border/70 px-3 py-3">
           <Link
             href="/admin"
+            prefetch
             className="group flex min-w-0 items-center gap-3 rounded-lg px-1 py-1 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring"
           >
             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-[0_0_28px_var(--glow)]">
@@ -146,12 +164,11 @@ export function AdminChrome ({
                             className="flex items-center gap-2"
                           >
                             <item.icon />
-                            <span>{item.label}</span>
-                            {item.href === '/admin/users' && pendingAdminCount > 0 ? (
-                              <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary group-data-[collapsible=icon]:hidden">
-                                {pendingAdminCount}
-                              </span>
-                            ) : null}
+                            <span className="truncate">{item.label}</span>
+                            <span className="ml-auto flex items-center gap-2 group-data-[collapsible=icon]:hidden">
+                              {item.href === '/admin/users' ? pendingNavBadge : null}
+                              <AdminNavPendingHint />
+                            </span>
                           </AdminNavLink>
                         }
                       />
@@ -185,11 +202,7 @@ export function AdminChrome ({
               <p className="truncate text-sm font-semibold text-foreground">Admin workspace</p>
               <p className="truncate text-xs text-muted-foreground">Cursor Kenya</p>
             </div>
-            {pendingAdminCount > 0 ? (
-              <Badge variant="secondary" className="ml-auto">
-                {pendingAdminCount} pending
-              </Badge>
-            ) : null}
+            {pendingMobileBadge}
           </div>
           <div className="relative z-10 min-w-0 flex-1">{children}</div>
         </div>

@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { asc, desc, eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
@@ -11,9 +12,10 @@ import {
 } from '@/db/schema'
 import { requireApprovedAdmin } from '@/lib/auth/session'
 import { AdminPageShell } from '@/components/admin-page-shell'
+import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { CreditsAdminClient } from './credits-admin-client'
 
-export default async function CreditsAdminPage () {
+async function CreditsAdminContent () {
   const { user } = await requireApprovedAdmin()
   const [providers, campaigns, allocations, guests, inventory, luma, metrics] = await Promise.all([
     db.select().from(creditProviders).orderBy(asc(creditProviders.name)),
@@ -54,31 +56,39 @@ export default async function CreditsAdminPage () {
   const metric = metrics[0] as Record<string, number> | undefined
 
   return (
+    <CreditsAdminClient
+      isSuperUser={user.role === 'super_user'}
+      providers={providers.map((row) => ({ ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() }))}
+      campaigns={campaigns.map((row) => ({
+        ...row, claimStartsAt: row.claimStartsAt?.toISOString() ?? null, claimEndsAt: row.claimEndsAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(),
+      }))}
+      allocations={allocations}
+      guests={guests.map((row) => ({ ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() }))}
+      inventory={inventory.map((row) => ({
+        ...row, expiresAt: row.expiresAt?.toISOString() ?? null, claimedAt: row.claimedAt?.toISOString() ?? null,
+        revokedAt: row.revokedAt?.toISOString() ?? null, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(),
+      }))}
+      lumaEvents={luma.map((row) => ({ ...row, startAt: row.startAt.toISOString() }))}
+      claimCounts={Object.fromEntries(claimCounts.map((row) => [row.campaignProviderId, row.value]))}
+      metrics={{
+        totalInventory: metric?.total_inventory ?? 0, availableInventory: metric?.available_inventory ?? 0,
+        claimedInventory: metric?.claimed_inventory ?? 0, revokedInventory: metric?.revoked_inventory ?? 0,
+        eligibleGuests: metric?.eligible_guests ?? 0, claims: metric?.claims ?? 0, redemptions: metric?.redemptions ?? 0,
+      }}
+    />
+  )
+}
+
+export default function CreditsAdminPage () {
+  return (
     <AdminPageShell
       title="Credit operations"
       description="Distribute provider credits without mixing claims, confirmed redemptions, or Luma attendance."
     >
-      <CreditsAdminClient
-        isSuperUser={user.role === 'super_user'}
-        providers={providers.map((row) => ({ ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() }))}
-        campaigns={campaigns.map((row) => ({
-          ...row, claimStartsAt: row.claimStartsAt?.toISOString() ?? null, claimEndsAt: row.claimEndsAt?.toISOString() ?? null,
-          createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(),
-        }))}
-        allocations={allocations}
-        guests={guests.map((row) => ({ ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() }))}
-        inventory={inventory.map((row) => ({
-          ...row, expiresAt: row.expiresAt?.toISOString() ?? null, claimedAt: row.claimedAt?.toISOString() ?? null,
-          revokedAt: row.revokedAt?.toISOString() ?? null, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(),
-        }))}
-        lumaEvents={luma.map((row) => ({ ...row, startAt: row.startAt.toISOString() }))}
-        claimCounts={Object.fromEntries(claimCounts.map((row) => [row.campaignProviderId, row.value]))}
-        metrics={{
-          totalInventory: metric?.total_inventory ?? 0, availableInventory: metric?.available_inventory ?? 0,
-          claimedInventory: metric?.claimed_inventory ?? 0, revokedInventory: metric?.revoked_inventory ?? 0,
-          eligibleGuests: metric?.eligible_guests ?? 0, claims: metric?.claims ?? 0, redemptions: metric?.redemptions ?? 0,
-        }}
-      />
+      <Suspense fallback={<AdminContentSkeleton variant="metrics" />}>
+        <CreditsAdminContent />
+      </Suspense>
     </AdminPageShell>
   )
 }

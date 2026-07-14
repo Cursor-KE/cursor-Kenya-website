@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { desc, eq, sql } from 'drizzle-orm'
 import Link from 'next/link'
 import {
@@ -19,6 +20,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { AdminPageShell } from '@/components/admin-page-shell'
+import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { db } from '@/db'
@@ -33,7 +35,7 @@ const responseDateFormatter = new Intl.DateTimeFormat('en-US', {
   minute: '2-digit',
 })
 
-export default async function AdminDashboardPage () {
+async function AdminDashboardContent () {
   const currentUser = await requireApprovedAdmin()
 
   const [statsRows, recent, pendingAdminRows] = await Promise.all([
@@ -103,15 +105,13 @@ export default async function AdminDashboardPage () {
   ]
 
   return (
-    <AdminPageShell
-      title="Operations dashboard"
-      description="A high-signal overview of content inventory, submission flow, and admin access work."
-    >
+    <>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {metricCards.map((s) => (
           <Link
             key={s.label}
             href={s.href}
+            prefetch
             aria-label={`${s.label}: ${Number(s.value)}. Open ${s.label} admin.`}
             className="group rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
@@ -174,6 +174,7 @@ export default async function AdminDashboardPage () {
                   <li key={r.id}>
                     <Link
                       href={`/admin/responses/${r.id}`}
+                      prefetch
                       className="group/row grid gap-3 rounded-xl border border-border/60 bg-background/45 p-3.5 text-sm outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/35 hover:bg-background/75 hover:shadow-[0_14px_40px_rgb(0_0_0/0.16)] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
                     >
                       <span className="flex min-w-0 items-center gap-3.5">
@@ -181,7 +182,7 @@ export default async function AdminDashboardPage () {
                           <span className="absolute -right-1 -top-1 size-2.5 rounded-full border border-card bg-primary/80" />
                           {String(index + 1).padStart(2, '0')}
                         </span>
-                        <span className="min-w-0 space-y-1">
+                        <span className="min-w-0 flex flex-col gap-1">
                           <span className="block truncate font-medium text-foreground">
                             {r.formTitle ?? 'Untitled form'}
                           </span>
@@ -217,6 +218,7 @@ export default async function AdminDashboardPage () {
           {currentUser.user.role === 'super_user' ? (
             <Link
               href="/admin/users"
+              prefetch
               aria-label={`Admin approvals: ${pendingAdminCount} pending. Open admin users.`}
               className="group rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
@@ -267,6 +269,19 @@ export default async function AdminDashboardPage () {
           </Card>
         </div>
       </section>
+    </>
+  )
+}
+
+export default function AdminDashboardPage () {
+  return (
+    <AdminPageShell
+      title="Operations dashboard"
+      description="A high-signal overview of content inventory, submission flow, and admin access work."
+    >
+      <Suspense fallback={<AdminContentSkeleton variant="dashboard" />}>
+        <AdminDashboardContent />
+      </Suspense>
     </AdminPageShell>
   )
 }
