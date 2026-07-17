@@ -33,12 +33,6 @@ export function RecapEditor ({ initial }: { initial: RecapEditorValue }) {
   const editorKey = initial.id ?? 'new'
 
   useEffect(() => {
-    setTitle(initial.title)
-    setSlug(initial.slug)
-    setSlugEdited(Boolean(initial.slug))
-  }, [initial.id, initial.slug, initial.title])
-
-  useEffect(() => {
     if (!initial.id && state.ok && state.id) {
       router.replace(`/admin/recaps/${state.id}`)
     }
