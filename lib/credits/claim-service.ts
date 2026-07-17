@@ -3,7 +3,7 @@ import 'server-only'
 import { and, count, desc, eq, gt, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { db } from '@/db'
-import { creditCampaigns, creditGuests, creditVerifications } from '@/db/schema'
+import { creditCampaigns, creditClaims, creditGuests, creditInventory, creditVerifications } from '@/db/schema'
 import { sendEmail } from '@/lib/email/nodemailer'
 import {
   hashVerificationValue,
@@ -134,9 +134,18 @@ export async function claimCredit (input: { verificationId: string; code: string
       if (!inventory) return { ok: false, code: 'out_of_stock', message: 'Credits are currently out of stock. Please check back later.' }
 
       const claimedAt = new Date()
-      await tx.execute(sql`INSERT INTO credit_claims (id, campaign_provider_id, guest_id, inventory_id, claimed_at)
-        VALUES (${nanoid()}, ${row.campaign_provider_id}, ${row.guest_id}, ${inventory.id}, ${claimedAt})`)
-      await tx.execute(sql`UPDATE credit_inventory SET status = 'claimed', claimed_at = ${claimedAt}, updated_at = ${claimedAt} WHERE id = ${inventory.id}`)
+      await tx.insert(creditClaims).values({
+        id: nanoid(),
+        campaignProviderId: row.campaign_provider_id,
+        guestId: row.guest_id,
+        inventoryId: inventory.id,
+        claimedAt,
+      })
+      await tx.update(creditInventory).set({
+        status: 'claimed',
+        claimedAt,
+        updatedAt: claimedAt,
+      }).where(eq(creditInventory.id, inventory.id))
       return { ok: true, code: 'claimed', credit: revealCredit(inventory.encrypted_value), message: 'Credit claimed successfully.' }
     })
   } catch (error) {
