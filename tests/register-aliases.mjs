@@ -9,6 +9,7 @@ const extensions = ['.ts', '.tsx', '.mts', '.js', '.mjs']
 const stubSpecifiers = new Map([
   ['server-only', 'tests/stubs/server-only.mjs'],
   ['next/cache', 'tests/stubs/next-cache.mjs'],
+  ['next/server', 'tests/stubs/next-server.mjs'],
 ])
 
 dotenv.config({ path: path.join(root, '.env'), quiet: true })
