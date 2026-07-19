@@ -15,8 +15,11 @@ import {
 } from '@/components/ui/card'
 import { db } from '@/db'
 import { formResponses, forms } from '@/db/schema'
+import { requireApprovedAdmin } from '@/lib/auth/session'
 
 async function AdminResponsesContent () {
+  await requireApprovedAdmin()
+
   const responses = await db
     .select({
       id: formResponses.id,
