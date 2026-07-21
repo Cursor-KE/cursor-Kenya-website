@@ -7,10 +7,8 @@ import {
 } from '@/components/admin-pending-count'
 import { AdminPageLoadingSkeleton } from '@/components/admin-page-skeleton'
 import {
-  ADMIN_APPROVAL_REQUIRED,
-  ADMIN_FORBIDDEN,
   SESSION_UNAUTHORIZED,
-  requireApprovedAdmin,
+  getOptionalCurrentUser,
 } from '@/lib/auth/session'
 
 /**
@@ -19,8 +17,10 @@ import {
  * Keep the chrome outside the gate and suspend only the page slot.
  */
 async function AdminAccessGate ({ children }: { children: React.ReactNode }) {
+  let currentUser: Awaited<ReturnType<typeof getOptionalCurrentUser>>
+
   try {
-    await requireApprovedAdmin()
+    currentUser = await getOptionalCurrentUser()
   } catch (error) {
     if (
       error instanceof Error &&
@@ -29,14 +29,15 @@ async function AdminAccessGate ({ children }: { children: React.ReactNode }) {
       redirect('/admin/login')
     }
 
-    if (
-      error instanceof Error &&
-      (error.message === ADMIN_APPROVAL_REQUIRED || error.message === ADMIN_FORBIDDEN)
-    ) {
-      redirect('/admin/pending')
-    }
-
     throw error
+  }
+
+  if (!currentUser) {
+    redirect('/admin/login')
+  }
+
+  if (currentUser.user.adminStatus !== 'approved') {
+    redirect('/admin/pending')
   }
 
   return children

@@ -9,3 +9,12 @@ test('pending admin badge does not throw outside the admin access gate for unsig
   assert.match(source, /getOptionalCurrentUser/)
   assert.match(source, /adminStatus !== 'approved'/)
 })
+
+test('admin layout gate redirects unsigned users without throwing auth sentinels', () => {
+  const source = readFileSync('app/admin/(dashboard)/layout.tsx', 'utf8')
+
+  assert.doesNotMatch(source, /requireApprovedAdmin/)
+  assert.match(source, /getOptionalCurrentUser/)
+  assert.match(source, /if \(!currentUser\)/)
+  assert.match(source, /redirect\('\/admin\/login'\)/)
+})
