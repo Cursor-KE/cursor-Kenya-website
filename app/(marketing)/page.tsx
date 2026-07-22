@@ -4,6 +4,7 @@ import { EventCard } from '@/components/event-card'
 import { HomeGalleryMosaic } from '@/components/home-gallery-mosaic'
 import { FadeIn } from '@/components/motion-fade'
 import { FeaturedVideosClient } from '@/components/featured-videos-client'
+import { HomePartners } from '@/components/home-partners'
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -177,6 +178,8 @@ export default function HomePage () {
       <Suspense fallback={null}>
         <HomeTestimonials />
       </Suspense>
+
+      <HomePartners />
     </div>
   )
 }
