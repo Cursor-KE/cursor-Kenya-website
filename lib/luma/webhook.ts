@@ -249,7 +249,7 @@ async function upsertLumaGuest (data: unknown) {
         email = ${parsedEmail.data},
         normalized_email = ${parsedEmail.data},
         name = COALESCE(${guest.name}, cg.name),
-        updated_at = ${guest.updatedAt}
+        updated_at = now()
       FROM credit_campaigns AS cc
       WHERE cg.campaign_id = cc.id
         AND cc.luma_event_id = ${guest.eventId}
