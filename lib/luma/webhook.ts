@@ -27,6 +27,7 @@ type LumaWebhookEventType = z.infer<typeof lumaWebhookEventTypeSchema>
 type LumaWebhookPayload = z.infer<typeof lumaWebhookPayloadSchema>
 
 type DeliveryStatus = 'processed' | 'ignored' | 'failed'
+type StoredDeliveryStatus = DeliveryStatus | 'processing'
 
 function isRecord (value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -164,10 +165,18 @@ function mapEventData (data: unknown, status: 'active' | 'canceled') {
 async function upsertLumaEvent (data: unknown, status: 'active' | 'canceled') {
   const event = mapEventData(data, status)
   if (!event) return false
+  const existing = await db
+    .select({ status: lumaEvents.status })
+    .from(lumaEvents)
+    .where(eq(lumaEvents.id, event.id))
+    .limit(1)
+  const nextStatus = status === 'active' && existing[0]?.status === 'canceled'
+    ? 'canceled'
+    : status
 
   await db
     .insert(lumaEvents)
-    .values(event)
+    .values({ ...event, status: nextStatus })
     .onConflictDoUpdate({
       target: lumaEvents.id,
       set: {
@@ -176,7 +185,7 @@ async function upsertLumaEvent (data: unknown, status: 'active' | 'canceled') {
         endAt: event.endAt,
         url: event.url,
         coverUrl: event.coverUrl,
-        status: event.status,
+        status: nextStatus,
         rawPayload: event.rawPayload,
         updatedAt: event.updatedAt,
       },
@@ -370,8 +379,30 @@ export async function processLumaWebhookBody (rawBody: string) {
     .onConflictDoNothing()
     .returning({ id: lumaWebhookDeliveries.id })
 
-  if (inserted.length === 0) {
-    return { duplicate: true, eventType: payload.type, objectId }
+  const isDuplicate = inserted.length === 0
+  if (isDuplicate) {
+    const existing = await db
+      .select({ status: lumaWebhookDeliveries.status })
+      .from(lumaWebhookDeliveries)
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
+      .limit(1)
+    const status = existing[0]?.status as StoredDeliveryStatus | undefined
+
+    if (status === 'processed' || status === 'ignored') {
+      return { duplicate: true, eventType: payload.type, objectId, status }
+    }
+
+    await db
+      .update(lumaWebhookDeliveries)
+      .set({
+        eventType: payload.type,
+        lumaObjectId: objectId,
+        payload: payloadRecord,
+        status: 'processing',
+        error: null,
+        processedAt: null,
+      })
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
   }
 
   try {
@@ -390,7 +421,7 @@ export async function processLumaWebhookBody (rawBody: string) {
       revalidatePath('/events')
     }
 
-    return { duplicate: false, eventType: payload.type, objectId, status }
+    return { duplicate: isDuplicate, eventType: payload.type, objectId, status }
   } catch (error) {
     await db
       .update(lumaWebhookDeliveries)
