@@ -1,8 +1,9 @@
 'use server'
 
-import { desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq, gt } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { after } from 'next/server'
 import { requireApprovedAdmin } from '@/lib/auth/session'
 import { db } from '@/db'
@@ -26,6 +27,13 @@ import {
   getBlockingValidationIssues,
   getShowcaseValidationSignals,
 } from '@/lib/showcase/validation'
+import {
+  SHOWCASE_SUBMISSION_RATE_LIMIT_MESSAGE,
+  SHOWCASE_SUBMISSION_RATE_LIMIT_WINDOW_MS,
+  getClientIpFromHeaders,
+  getShowcaseSubmissionRateLimitReason,
+  hashShowcaseRateLimitValue,
+} from '@/lib/showcase/submission-rate-limit'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -98,6 +106,29 @@ export async function submitCommunityShowcase (input: {
     return { ok: false, message: validationIssues[0] }
   }
 
+  const requestHeaders = await headers()
+  const submitterIp = getClientIpFromHeaders(requestHeaders)
+  const submitterIpHash = submitterIp ? hashShowcaseRateLimitValue(`ip:${submitterIp}`) : null
+  const since = new Date(Date.now() - SHOWCASE_SUBMISSION_RATE_LIMIT_WINDOW_MS)
+  const emailRateQuery = db
+    .select({ value: count() })
+    .from(communityShowcase)
+    .where(and(eq(communityShowcase.builderEmail, builderEmail), gt(communityShowcase.createdAt, since)))
+  const ipRateQuery = submitterIpHash
+    ? db
+        .select({ value: count() })
+        .from(communityShowcase)
+        .where(and(eq(communityShowcase.submitterIpHash, submitterIpHash), gt(communityShowcase.createdAt, since)))
+    : Promise.resolve([{ value: 0 }])
+  const [[emailRate], [ipRate]] = await Promise.all([emailRateQuery, ipRateQuery])
+  const rateLimitReason = getShowcaseSubmissionRateLimitReason({
+    emailSubmissions: emailRate?.value ?? 0,
+    ipSubmissions: submitterIpHash ? ipRate?.value ?? 0 : null,
+  })
+  if (rateLimitReason) {
+    return { ok: false, message: SHOWCASE_SUBMISSION_RATE_LIMIT_MESSAGE }
+  }
+
   const id = nanoid()
 
   try {
@@ -110,6 +141,7 @@ export async function submitCommunityShowcase (input: {
       builderName,
       builderEmail,
       screenshotUrls,
+      submitterIpHash,
       status: 'pending',
       featured: false,
       sortOrder: Date.now() % 1_000_000,
