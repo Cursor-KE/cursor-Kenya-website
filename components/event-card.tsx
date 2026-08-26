@@ -3,22 +3,9 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Calendar, ExternalLink } from 'lucide-react'
+import { formatEventRange } from '@/lib/luma/format'
 import type { CommunityEvent } from '@/lib/luma/types'
 import { cn } from '@/lib/utils'
-
-function formatRange (start: string, end: string | null) {
-  const s = new Date(start)
-  const opts: Intl.DateTimeFormatOptions = {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }
-  if (!end) return s.toLocaleString(undefined, opts)
-  const e = new Date(end)
-  return `${s.toLocaleString(undefined, opts)} — ${e.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`
-}
 
 export function EventCard ({ event, className }: { event: CommunityEvent; className?: string }) {
   return (
@@ -53,7 +40,7 @@ export function EventCard ({ event, className }: { event: CommunityEvent; classN
           </h3>
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4 shrink-0" />
-            {formatRange(event.startAt, event.endAt)}
+            {formatEventRange(event.startAt, event.endAt)}
           </p>
           <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary">
             View on Luma
