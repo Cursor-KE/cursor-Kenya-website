@@ -32,6 +32,18 @@ function resolveAppSpecifier (specifier) {
 
 registerHooks({
   resolve (specifier, context, nextResolve) {
+    if (specifier === 'server-only') {
+      return nextResolve(pathToFileURL(path.join(root, 'tests/server-only-stub.mjs')).href, context)
+    }
+
+    if (specifier === 'next/server') {
+      return nextResolve(pathToFileURL(path.join(root, 'node_modules/next/server.js')).href, context)
+    }
+
+    if (specifier === 'next/cache') {
+      return nextResolve(pathToFileURL(path.join(root, 'tests/next-cache-stub.mjs')).href, context)
+    }
+
     if (specifier.startsWith('@/')) {
       const resolved = resolveAppSpecifier(specifier)
       if (resolved) {
