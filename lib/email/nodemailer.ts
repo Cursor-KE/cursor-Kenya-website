@@ -54,6 +54,10 @@ function readSmtpConfig (): SmtpConfig | null {
   }
 }
 
+export function isEmailDeliveryConfigured (): boolean {
+  return readSmtpConfig() !== null
+}
+
 export async function sendEmail (message: Omit<SendMailOptions, 'from'> & { from?: string }): Promise<boolean> {
   const config = readSmtpConfig()
   if (!config) return false
