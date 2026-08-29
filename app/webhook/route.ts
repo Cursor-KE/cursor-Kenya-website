@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import {
+  LumaWebhookDeliveryInProgressError,
   processLumaWebhookBody,
   verifyLumaWebhookSignature,
   verifyLumaWebhookToken,
@@ -29,6 +30,13 @@ export async function POST (request: Request) {
   } catch (error) {
     if (error instanceof SyntaxError || error instanceof ZodError) {
       return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 })
+    }
+
+    if (error instanceof LumaWebhookDeliveryInProgressError) {
+      return NextResponse.json(
+        { error: 'Webhook delivery is already processing' },
+        { status: 409, headers: { 'Retry-After': '30' } }
+      )
     }
 
     console.error('Luma webhook processing failed', error)
