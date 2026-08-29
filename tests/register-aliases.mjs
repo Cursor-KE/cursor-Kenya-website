@@ -5,6 +5,10 @@ import { pathToFileURL } from 'node:url'
 
 const root = path.resolve(import.meta.dirname, '..')
 const extensions = ['.ts', '.tsx', '.mts', '.js', '.mjs']
+const emptyModuleUrl = 'data:text/javascript,export%20%7B%7D'
+const nextCacheModuleUrl = 'data:text/javascript,export%20function%20revalidatePath%20()%20%7B%7D'
+
+process.env.DATABASE_URL ??= 'postgres://test:test@127.0.0.1:1/test'
 
 function resolveAppSpecifier (specifier) {
   const basePath = path.join(root, specifier.slice(2))
@@ -32,6 +36,14 @@ function resolveAppSpecifier (specifier) {
 
 registerHooks({
   resolve (specifier, context, nextResolve) {
+    if (specifier === 'server-only') {
+      return { url: emptyModuleUrl, shortCircuit: true }
+    }
+
+    if (specifier === 'next/cache') {
+      return { url: nextCacheModuleUrl, shortCircuit: true }
+    }
+
     if (specifier.startsWith('@/')) {
       const resolved = resolveAppSpecifier(specifier)
       if (resolved) {
