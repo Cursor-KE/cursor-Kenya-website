@@ -1,11 +1,12 @@
 import 'server-only'
 
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
 import { lumaEvents, lumaGuests, lumaTickets, lumaWebhookDeliveries } from '@/db/schema'
+import { emailSchema } from '@/lib/credits/core'
 
 const lumaWebhookEventTypeSchema = z.enum([
   'calendar.event.added',
@@ -239,6 +240,30 @@ async function upsertLumaGuest (data: unknown) {
         updatedAt: guest.updatedAt,
       },
     })
+
+  const parsedEmail = emailSchema.safeParse(guest.email)
+  if (parsedEmail.success) {
+    await db.execute(sql`
+      UPDATE credit_guests AS cg
+      SET
+        email = ${parsedEmail.data},
+        normalized_email = ${parsedEmail.data},
+        name = COALESCE(${guest.name}, cg.name),
+        updated_at = now()
+      FROM credit_campaigns AS cc
+      WHERE cg.campaign_id = cc.id
+        AND cc.luma_event_id = ${guest.eventId}
+        AND cg.source = 'luma'
+        AND cg.external_id = ${guest.id}
+        AND NOT EXISTS (
+          SELECT 1
+          FROM credit_guests AS duplicate
+          WHERE duplicate.campaign_id = cg.campaign_id
+            AND duplicate.normalized_email = ${parsedEmail.data}
+            AND duplicate.id <> cg.id
+        )
+    `)
+  }
 
   return true
 }
