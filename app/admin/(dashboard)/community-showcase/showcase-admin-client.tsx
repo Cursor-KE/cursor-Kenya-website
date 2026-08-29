@@ -33,9 +33,12 @@ import {
 } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
-import { communityShowcase } from '@/db/schema'
+import {
+  formatShowcaseSubmittedAt,
+  type CommunityShowcaseAdminRow,
+} from '@/lib/showcase/admin-serialization'
 
-type Row = typeof communityShowcase.$inferSelect
+type Row = CommunityShowcaseAdminRow
 type StatusFilter = 'all' | 'pending' | 'approved' | 'rejected'
 type SubmissionStatus = Exclude<StatusFilter, 'all'>
 
@@ -79,14 +82,6 @@ function repositoryUrlForReview (review: ShowcaseSavedReview, row: Row) {
   return url && url.toLowerCase() !== 'not provided' ? url : null
 }
 
-function formatSubmittedAt (date: Date) {
-  return new Intl.DateTimeFormat('en', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(date)
-}
-
 function formatProjectKind (kind: string) {
   return kind
     .split(/[-_\s]+/)
@@ -99,10 +94,12 @@ export function ShowcaseAdminClient ({
   rows,
   aiEnabled,
   initialReviews,
+  loadErrorMessage,
 }: {
   rows: Row[]
   aiEnabled: boolean
   initialReviews: Record<string, ShowcaseSavedReview>
+  loadErrorMessage: string | null
 }) {
   const router = useRouter()
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -421,6 +418,13 @@ export function ShowcaseAdminClient ({
         </div>
       ) : null}
 
+      {loadErrorMessage ? (
+        <div role="alert" className="flex items-start gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>{loadErrorMessage}</p>
+        </div>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Showcase submission status summary">
         {statusFilterOptions.map((option) => {
           const count = option.value === 'all' ? totalRows : statusCounts[option.value]
@@ -450,7 +454,11 @@ export function ShowcaseAdminClient ({
       </div>
 
       <ul className="space-y-4">
-        {rows.length === 0 ? (
+        {loadErrorMessage ? (
+          <li className="rounded-2xl border border-dashed border-destructive/30 bg-destructive/5 px-4 py-8 text-center text-sm text-destructive">
+            Unable to load submissions right now.
+          </li>
+        ) : rows.length === 0 ? (
           <li className="rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
             No submissions yet.
           </li>
@@ -483,7 +491,7 @@ export function ShowcaseAdminClient ({
                         <a href={`mailto:${row.builderEmail}`} className="hover:text-foreground hover:underline">
                           {row.builderEmail}
                         </a>{' '}
-                        · {formatSubmittedAt(row.createdAt)}
+                        · {formatShowcaseSubmittedAt(row.createdAt)}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">

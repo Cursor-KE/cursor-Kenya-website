@@ -3,6 +3,7 @@ import { ShowcaseAdminClient } from '@/app/admin/(dashboard)/community-showcase/
 import { AdminPageShell } from '@/components/admin-page-shell'
 import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { getAllCommunityShowcaseForAdmin, getLatestShowcaseAiReviewsForAdmin } from '@/lib/queries'
+import { serializeCommunityShowcaseAdminRows } from '@/lib/showcase/admin-serialization'
 
 const ADMIN_SHOWCASE_QUERY_TIMEOUT_MS = 12_000
 
@@ -18,6 +19,8 @@ function withTimeout<T> (promise: Promise<T>, timeoutMs: number): Promise<T> {
 async function AdminCommunityShowcaseContent () {
   let rows: Awaited<ReturnType<typeof getAllCommunityShowcaseForAdmin>> = []
   let initialReviews: Awaited<ReturnType<typeof getLatestShowcaseAiReviewsForAdmin>> = {}
+  let loadErrorMessage: string | null = null
+
   try {
     ;[rows, initialReviews] = await withTimeout(
       Promise.all([
@@ -26,9 +29,12 @@ async function AdminCommunityShowcaseContent () {
       ]),
       ADMIN_SHOWCASE_QUERY_TIMEOUT_MS
     )
-  } catch {
-    // database unavailable
+  } catch (error) {
+    console.error('[AdminCommunityShowcasePage]', error)
+    loadErrorMessage = 'Could not load showcase submissions. Check the database connection, then refresh this page.'
   }
+
+  const serializedRows = serializeCommunityShowcaseAdminRows(rows)
 
   return (
     <>
@@ -38,9 +44,10 @@ async function AdminCommunityShowcaseContent () {
         </p>
       ) : null}
       <ShowcaseAdminClient
-        rows={rows}
+        rows={serializedRows}
         aiEnabled={Boolean(process.env.OPENAI_API_KEY)}
         initialReviews={initialReviews}
+        loadErrorMessage={loadErrorMessage}
       />
     </>
   )
