@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { and, eq, lt, or } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -27,6 +27,8 @@ type LumaWebhookEventType = z.infer<typeof lumaWebhookEventTypeSchema>
 type LumaWebhookPayload = z.infer<typeof lumaWebhookPayloadSchema>
 
 type DeliveryStatus = 'processed' | 'ignored' | 'failed'
+
+const STALE_PROCESSING_RETRY_MINUTES = 10
 
 function isRecord (value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -107,6 +109,10 @@ export function verifyLumaWebhookSignature (request: Request, rawBody: string): 
     .digest('base64')
 
   return parseSignatures(signature).some((candidate) => safeEqual(candidate, expected))
+}
+
+export function hasLumaWebhookAuthConfig (): boolean {
+  return Boolean(process.env.LUMA_WEBHOOK_SECRET || process.env.LUMA_WEBHOOK_ROUTE_TOKEN)
 }
 
 export function verifyLumaWebhookToken (request: Request): boolean {
@@ -357,6 +363,8 @@ export async function processLumaWebhookBody (rawBody: string) {
   const payload = lumaWebhookPayloadSchema.parse(json)
   const payloadRecord = isRecord(json) ? json : { type: payload.type, data: payload.data }
   const objectId = getLumaObjectId(payload)
+  const now = new Date()
+  const staleProcessingCutoff = new Date(now.getTime() - STALE_PROCESSING_RETRY_MINUTES * 60_000)
 
   const inserted = await db
     .insert(lumaWebhookDeliveries)
@@ -366,12 +374,37 @@ export async function processLumaWebhookBody (rawBody: string) {
       lumaObjectId: objectId,
       payload: payloadRecord,
       status: 'processing',
+      receivedAt: now,
     })
     .onConflictDoNothing()
     .returning({ id: lumaWebhookDeliveries.id })
 
   if (inserted.length === 0) {
-    return { duplicate: true, eventType: payload.type, objectId }
+    const retryable = await db
+      .update(lumaWebhookDeliveries)
+      .set({
+        eventType: payload.type,
+        lumaObjectId: objectId,
+        payload: payloadRecord,
+        status: 'processing',
+        error: null,
+        processedAt: null,
+      })
+      .where(and(
+        eq(lumaWebhookDeliveries.id, deliveryId),
+        or(
+          eq(lumaWebhookDeliveries.status, 'failed'),
+          and(
+            eq(lumaWebhookDeliveries.status, 'processing'),
+            lt(lumaWebhookDeliveries.receivedAt, staleProcessingCutoff)
+          )
+        )
+      ))
+      .returning({ id: lumaWebhookDeliveries.id })
+
+    if (retryable.length === 0) {
+      return { duplicate: true, eventType: payload.type, objectId }
+    }
   }
 
   try {
