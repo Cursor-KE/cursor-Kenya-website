@@ -53,6 +53,7 @@ Use **`pnpm db:probe`** to verify connectivity and pooler/SSL behavior without s
 | `BETTER_AUTH_SECRET` | Production | Secret for Better Auth (min length enforced in production). |
 | `BETTER_AUTH_URL` | Production | Public origin of the app (e.g. `https://example.com`). Defaults to `http://localhost:3000` in development. |
 | `NEXT_PUBLIC_APP_URL` | Recommended | Canonical site URL for metadata and the auth client ([`lib/auth-client.ts`](lib/auth-client.ts)). |
+| `CREDIT_ENCRYPTION_KEY` | Production credit inventory | Encrypts credit values at rest. Production inventory writes fail closed when this is unset. |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | For gallery/admin uploads | Cloudinary API credentials. |
 | `CLOUDINARY_UPLOAD_PREFIX` | Optional | Upload folder prefix ([`lib/cloudinary/folder.ts`](lib/cloudinary/folder.ts)). |
 | `LUMA_API_KEY` | Optional | Enables event listings from Luma and webhook setup; without it, events UI degrades gracefully. |

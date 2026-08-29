@@ -26,7 +26,7 @@ Admins can add guests manually, paste a guest CSV, or import synchronized Luma g
 
 Inventory can be unallocated or assigned to a compatible campaign-provider allocation. Values are globally deduplicated using a SHA-256 fingerprint. Admin lists contain only a masked value. Full values are revealed only after a verified successful claim or verified retry.
 
-Set `CREDIT_ENCRYPTION_KEY` in every runtime that reads or writes inventory. With this setting, values are encrypted at rest using AES-256-GCM. Existing values must continue to use the same key. If the variable is absent, the implementation uses an explicitly marked base64 fallback so local development remains usable; this is not encryption and should not be used in production.
+Set `CREDIT_ENCRYPTION_KEY` in every runtime that reads or writes inventory. With this setting, values are encrypted at rest using AES-256-GCM. Existing values must continue to use the same key. If the variable is absent in production, inventory writes fail closed instead of storing reversible values. Local development can still use an explicitly marked base64 fallback; this is not encryption.
 
 Claimed inventory cannot be edited or deleted. Super users can revoke it through an audited action. Revocation preserves the original claim and does not allocate a replacement.
 
