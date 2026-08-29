@@ -14,6 +14,13 @@ import {
 import { showcaseReviewResultSchema } from '../lib/ai/showcase-review-schema.ts'
 import { evaluateShowcasePolicy } from '../lib/ai/showcase-policy.ts'
 import { getShowcaseValidationSignals } from '../lib/showcase/validation.ts'
+import {
+  SHOWCASE_SUBMISSION_EMAIL_LIMIT,
+  SHOWCASE_SUBMISSION_IP_LIMIT,
+  getClientIpFromHeaders,
+  getShowcaseSubmissionRateLimitReason,
+  hashShowcaseRateLimitValue,
+} from '../lib/showcase/submission-rate-limit.ts'
 
 const submission = {
   id: 'showcase_123',
@@ -131,6 +138,58 @@ test('validation signals and policy allow only strong low-risk auto-approval', (
   })
   assert.equal(blocked.decisionMode, 'manual_review')
   assert.deepEqual(blocked.reasons, ['AI recommendation requires manual review.'])
+})
+
+test('showcase submission rate limit blocks repeated email or IP bursts', () => {
+  assert.equal(
+    getShowcaseSubmissionRateLimitReason({
+      emailSubmissions: SHOWCASE_SUBMISSION_EMAIL_LIMIT - 1,
+      ipSubmissions: SHOWCASE_SUBMISSION_IP_LIMIT - 1,
+    }),
+    null
+  )
+  assert.equal(
+    getShowcaseSubmissionRateLimitReason({
+      emailSubmissions: SHOWCASE_SUBMISSION_EMAIL_LIMIT,
+      ipSubmissions: 0,
+    }),
+    'email'
+  )
+  assert.equal(
+    getShowcaseSubmissionRateLimitReason({
+      emailSubmissions: 0,
+      ipSubmissions: SHOWCASE_SUBMISSION_IP_LIMIT,
+    }),
+    'ip'
+  )
+  assert.equal(
+    getShowcaseSubmissionRateLimitReason({
+      emailSubmissions: 0,
+      ipSubmissions: null,
+    }),
+    null
+  )
+})
+
+test('showcase submission IP parsing and hashing avoid raw IP storage', () => {
+  const requestHeaders = {
+    get: (name: string) => {
+      if (name === 'x-forwarded-for') return ' 203.0.113.10, 198.51.100.2 '
+      if (name === 'x-real-ip') return '198.51.100.3'
+      return null
+    },
+  }
+  const fallbackHeaders = {
+    get: (name: string) => (name === 'x-real-ip' ? '198.51.100.4' : null),
+  }
+
+  assert.equal(getClientIpFromHeaders(requestHeaders), '203.0.113.10')
+  assert.equal(getClientIpFromHeaders(fallbackHeaders), '198.51.100.4')
+
+  const firstHash = hashShowcaseRateLimitValue('ip:203.0.113.10')
+  const secondHash = hashShowcaseRateLimitValue('ip:203.0.113.10')
+  assert.equal(firstHash, secondHash)
+  assert.notEqual(firstHash, 'ip:203.0.113.10')
 })
 
 test('structured output extractor prefers output_text and rejects refusals', () => {
