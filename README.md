@@ -56,8 +56,8 @@ Use **`pnpm db:probe`** to verify connectivity and pooler/SSL behavior without s
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | For gallery/admin uploads | Cloudinary API credentials. |
 | `CLOUDINARY_UPLOAD_PREFIX` | Optional | Upload folder prefix ([`lib/cloudinary/folder.ts`](lib/cloudinary/folder.ts)). |
 | `LUMA_API_KEY` | Optional | Enables event listings from Luma and webhook setup; without it, events UI degrades gracefully. |
-| `LUMA_WEBHOOK_SECRET` | Recommended for Luma webhooks | Verifies Luma webhook signatures from `webhook-*` / `svix-*` headers using the returned `whsec_...` secret. |
-| `LUMA_WEBHOOK_ROUTE_TOKEN` | Recommended for Luma webhooks | Shared token accepted by `/webhook` through `?token=...`, `x-webhook-token`, or bearer auth. |
+| `LUMA_WEBHOOK_SECRET` | Required for signed Luma webhooks unless `LUMA_WEBHOOK_ROUTE_TOKEN` is set | Verifies Luma webhook signatures from `webhook-*` / `svix-*` headers using the returned `whsec_...` secret. |
+| `LUMA_WEBHOOK_ROUTE_TOKEN` | Required for token-authenticated Luma webhooks unless `LUMA_WEBHOOK_SECRET` is set | Shared token accepted by `/webhook` through `?token=...`, `x-webhook-token`, or bearer auth. |
 | `LUMA_WEBHOOK_URL` | Optional | Absolute webhook URL for `pnpm luma:webhook:create`. Defaults to `${NEXT_PUBLIC_APP_URL}/webhook` or `${BETTER_AUTH_URL}/webhook`. |
 | `LUMA_WEBHOOK_EVENTS` | Optional | Comma-separated event types for webhook creation. Defaults to event lifecycle plus guest/ticket registration events. |
 | `OPENAI_API_KEY` | For admin AI features | Enables showcase AI reviews, guarded batch review, auto-approval plus featuring for qualifying pending submissions, and AI form draft generation. |
@@ -77,7 +77,7 @@ Showcase email verification:
 
 Luma webhook setup:
 
-1. Configure `LUMA_API_KEY`, `NEXT_PUBLIC_APP_URL` or `LUMA_WEBHOOK_URL`, and preferably `LUMA_WEBHOOK_ROUTE_TOKEN`.
+1. Configure `LUMA_API_KEY`, `NEXT_PUBLIC_APP_URL` or `LUMA_WEBHOOK_URL`, and either `LUMA_WEBHOOK_ROUTE_TOKEN` or `LUMA_WEBHOOK_SECRET`.
 2. Run `pnpm luma:webhook:create`.
 3. Save the returned Luma `secret` as `LUMA_WEBHOOK_SECRET`.
 4. Run `pnpm db:migrate` so webhook deliveries and event snapshots can be stored.
