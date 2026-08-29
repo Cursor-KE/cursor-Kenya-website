@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useActionState, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useActionState, useEffect, useState } from 'react'
 import { ArrowUpRight, Eye, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,14 +24,22 @@ type RecapEditorValue = {
 
 export function RecapEditor ({ initial }: { initial: RecapEditorValue }) {
   const initialActionState: RecapActionState = { ok: true, message: '' }
+  const router = useRouter()
   const [state, action, pending] = useActionState(saveRecapPost, initialActionState)
   const [title, setTitle] = useState(initial.title)
   const [slug, setSlug] = useState(initial.slug)
   const [slugEdited, setSlugEdited] = useState(Boolean(initial.slug))
   const publicSlug = slug || normalizeRecapSlug(title)
+  const editorKey = initial.id ?? 'new'
 
-  return <form action={action} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
-    <input type="hidden" name="id" value={initial.id ?? state.id ?? ''} />
+  useEffect(() => {
+    if (!initial.id && state.ok && state.id) {
+      router.replace(`/admin/recaps/${state.id}`)
+    }
+  }, [initial.id, router, state.id, state.ok])
+
+  return <form key={editorKey} action={action} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
+    <input type="hidden" name="id" value={initial.id ?? ''} />
     <Card className="border-border/70 bg-card/65"><CardHeader><CardTitle>Story</CardTitle><CardDescription>Write in plain text with lightweight formatting for headings, lists, quotes, bold text, and inline code.</CardDescription></CardHeader><CardContent className="space-y-5">
       <div className="space-y-2"><Label htmlFor="title">Title</Label><Input id="title" name="title" value={title} onChange={(event) => { const next = event.target.value; setTitle(next); if (!slugEdited) setSlug(normalizeRecapSlug(next)) }} placeholder="What we learned at the Nairobi meetup" required /></div>
       <div className="space-y-2"><Label htmlFor="slug">Public URL</Label><div className="flex items-center rounded-lg border border-input bg-background/35 focus-within:ring-2 focus-within:ring-ring"><span className="pl-3 font-mono text-xs text-muted-foreground">/recaps/</span><Input id="slug" name="slug" value={slug} onChange={(event) => { setSlugEdited(true); setSlug(normalizeRecapSlug(event.target.value)) }} className="border-0 bg-transparent pl-1 shadow-none focus-visible:ring-0" required /></div></div>
