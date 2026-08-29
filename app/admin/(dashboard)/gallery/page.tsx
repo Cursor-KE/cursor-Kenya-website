@@ -5,8 +5,11 @@ import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { db } from '@/db'
 import { images, videos } from '@/db/schema'
 import { GalleryAdminClient } from '@/app/admin/(dashboard)/gallery/gallery-admin-client'
+import { requireApprovedAdmin } from '@/lib/auth/session'
 
 async function AdminGalleryContent () {
+  await requireApprovedAdmin()
+
   const [photoRows, videoRows] = await Promise.all([
     db.select().from(images).orderBy(desc(images.sortOrder)),
     db.select().from(videos).orderBy(desc(videos.sortOrder)),
