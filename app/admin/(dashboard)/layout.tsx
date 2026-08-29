@@ -1,17 +1,11 @@
 import { Suspense } from 'react'
-import { redirect } from 'next/navigation'
 import { AdminChrome } from '@/components/admin-sidebar'
 import {
   PendingAdminMobileBadge,
   PendingAdminNavBadge,
 } from '@/components/admin-pending-count'
 import { AdminPageLoadingSkeleton } from '@/components/admin-page-skeleton'
-import {
-  ADMIN_APPROVAL_REQUIRED,
-  ADMIN_FORBIDDEN,
-  SESSION_UNAUTHORIZED,
-  requireApprovedAdmin,
-} from '@/lib/auth/session'
+import { getApprovedAdminOrRedirect } from '@/lib/auth/admin-access'
 
 /**
  * Auth uses headers()/cookies, so awaiting it in the layout body blocks
@@ -19,26 +13,7 @@ import {
  * Keep the chrome outside the gate and suspend only the page slot.
  */
 async function AdminAccessGate ({ children }: { children: React.ReactNode }) {
-  try {
-    await requireApprovedAdmin()
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message === SESSION_UNAUTHORIZED
-    ) {
-      redirect('/admin/login')
-    }
-
-    if (
-      error instanceof Error &&
-      (error.message === ADMIN_APPROVAL_REQUIRED || error.message === ADMIN_FORBIDDEN)
-    ) {
-      redirect('/admin/pending')
-    }
-
-    throw error
-  }
-
+  await getApprovedAdminOrRedirect()
   return children
 }
 
