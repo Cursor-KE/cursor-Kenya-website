@@ -1,8 +1,9 @@
+import { BRAND } from '@/lib/brand'
 import { FadeIn } from '@/components/motion-fade'
 
 export const metadata = {
-  title: 'About | Cursor Kenya',
-  description: 'The story behind the Cursor Kenya developer community.',
+  title: 'About',
+  description: `The story behind the ${BRAND.name} developer community.`,
 }
 
 export default function AboutPage () {
@@ -10,9 +11,9 @@ export default function AboutPage () {
     <div className="px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-3xl space-y-16">
         <FadeIn>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">About Cursor Kenya</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">About {BRAND.name}</h1>
           <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
-            Cursor Kenya is a volunteer-led community for developers who build with AI-assisted tools — especially{' '}
+            {BRAND.name} is a volunteer-led community for developers who build with AI-assisted tools, including{' '}
             <span className="text-foreground">Cursor</span>. We run meetups, deep-dives, and casual hangs where people
             share workflows, plugins, and honest lessons from shipping real software.
           </p>
@@ -31,7 +32,7 @@ export default function AboutPage () {
             </li>
             <li className="flex gap-3">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              Local roots, global perspective — builders across Kenya connected to the wider Cursor ecosystem.
+              Local roots, global perspective — builders across Kenya connected to the wider AI developer ecosystem.
             </li>
           </ul>
         </FadeIn>

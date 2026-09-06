@@ -5,13 +5,14 @@
  * https://github.com/Blackie360/Cursor-photobooth/blob/main/components/card-preview.tsx
  * (single locked Figma template + canvas title/hashtag/photo composite).
  */
+import { BRAND } from '@/lib/brand'
 import { forwardRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { DEFAULT_FRAME_CARD_TITLE } from '@/lib/frame-card/settings'
 import { FRAME_CARD_HASHTAGS } from '@/lib/frame-card/hashtags'
 
 const CARD_SIZE = 1024
-const TEMPLATE_SRC = '/cursor-nairobi-card-template.png'
+const TEMPLATE_SRC = BRAND.assets.cardTemplate
 
 const FRAME_X = 272
 const FRAME_Y = 224

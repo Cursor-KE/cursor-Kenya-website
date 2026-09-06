@@ -1,6 +1,6 @@
-# Cursor Kenya
+# SpaceXAI Kenya
 
-Next.js site for the Kenya Cursor and AI-assisted coding community: a public marketing area (home, about, events, gallery, and dynamic forms) plus a password-protected admin for forms, media, and responses.
+Next.js site for SpaceXAI Kenya, a volunteer-led community for AI-assisted development: a public marketing area (home, about, events, gallery, and dynamic forms) plus a password-protected admin for forms, media, and responses.
 
 ## Stack
 

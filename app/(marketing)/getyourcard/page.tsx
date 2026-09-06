@@ -1,3 +1,4 @@
+import { BRAND } from '@/lib/brand'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { FrameCardGenerator } from '@/components/frame-card-generator'
@@ -5,7 +6,7 @@ import { getPublishedFrameCardSettings } from '@/lib/queries'
 
 export const metadata: Metadata = {
   title: 'Get your card',
-  description: 'Create and share your Cursor Kenya meetup attendance card.',
+  description: `Create and share your ${BRAND.name} meetup attendance card.`,
 }
 
 export const dynamic = 'force-dynamic'
@@ -22,7 +23,7 @@ export default async function GetYourCardPage () {
             Get your card
           </h1>
           <p className="mt-3 text-base leading-7 text-muted-foreground">
-            Add your photo to the Cursor Kenya meetup frame, then download or share the image.
+            Add your photo to the {BRAND.name} meetup frame, then download or share the image.
           </p>
         </div>
         <FrameCardGenerator title={settings.title} />

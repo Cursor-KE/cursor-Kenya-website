@@ -1,3 +1,4 @@
+import { BRAND } from '@/lib/brand'
 import { desc, inArray } from 'drizzle-orm'
 import Link from 'next/link'
 import { ArrowUpRight, CalendarClock, Gift } from 'lucide-react'
@@ -33,7 +34,7 @@ export default async function CreditsPage () {
     <div className="relative mx-auto max-w-6xl">
       <header className="grid gap-7 border-b border-border/80 pb-10 lg:grid-cols-[1fr_auto] lg:items-end">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary">Cursor Kenya credit drops</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary">{BRAND.name} credit drops</p>
           <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight sm:text-6xl">Claim tools for what you build next.</h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">Choose your event or programme, verify the email used for your RSVP, and securely reveal an available credit.</p>
         </div>

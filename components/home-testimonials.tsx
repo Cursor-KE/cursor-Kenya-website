@@ -1,3 +1,4 @@
+import { BRAND } from '@/lib/brand'
 import { Quote } from 'lucide-react'
 import { FadeIn } from '@/components/motion-fade'
 import { getPublishedTestimonials } from '@/lib/queries'
@@ -38,7 +39,7 @@ export async function HomeTestimonials () {
               </blockquote>
               <p className="mt-4 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">
-                  {t.attendeeName ?? 'A Cursor Kenya attendee'}
+                  {t.attendeeName ?? `A ${BRAND.name} attendee`}
                 </span>
                 {t.attendeeRole ? <span> · {t.attendeeRole}</span> : null}
               </p>

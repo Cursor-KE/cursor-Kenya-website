@@ -1,12 +1,14 @@
 'use client'
 
+import { BRAND } from '@/lib/brand'
+
 import { useRef, useState } from 'react'
 import { Download, ImagePlus, Share2, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { FrameCardPreview } from '@/components/frame-card-preview'
 
-const OUTPUT_FILENAME = 'cursor-kenya-frame.png'
+const OUTPUT_FILENAME = BRAND.cardFilename
 
 function readFileAsDataUrl (file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -88,8 +90,8 @@ export function FrameCardGenerator ({
       const file = dataUrlToFile(dataUrl)
       const shareData = {
         files: [file],
-        title: 'Cursor Kenya meetup card',
-        text: 'I am attending Cursor Kenya.',
+        title: `${BRAND.name} meetup card`,
+        text: `I am attending ${BRAND.name}.`,
       }
 
       if (navigator.canShare?.(shareData)) {

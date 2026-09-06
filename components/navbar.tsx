@@ -1,5 +1,6 @@
 'use client'
 
+import { BrandWordmark } from '@/components/brand-wordmark'
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -43,12 +44,12 @@ export function Navbar ({
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
-          className="text-lg font-semibold tracking-tight text-foreground transition hover:text-primary"
+          className="shrink-0 whitespace-nowrap text-lg font-semibold tracking-tight text-foreground transition hover:text-primary"
         >
-          Cursor<span className="text-muted-foreground"> Kenya</span>
+          <BrandWordmark />
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 lg:flex">
           {links.map((l) => (
             <Link
               key={l.href}
@@ -67,7 +68,7 @@ export function Navbar ({
 
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
           <SheetTrigger
-            className="md:hidden"
+            className="lg:hidden"
             render={
               <Button variant="ghost" size="icon" aria-label="Open menu">
                 <Menu className="h-5 w-5" />

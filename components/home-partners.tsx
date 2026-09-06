@@ -1,3 +1,4 @@
+import { BRAND } from '@/lib/brand'
 import Image from 'next/image'
 import { FadeIn } from '@/components/motion-fade'
 import { cn } from '@/lib/utils'
@@ -51,7 +52,7 @@ export function HomePartners () {
             Past partners &amp; sponsors
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            We&apos;re grateful to the organizations that have supported the Cursor Kenya community.
+            We&apos;re grateful to the organizations that have supported the {BRAND.name} community.
           </p>
         </FadeIn>
 

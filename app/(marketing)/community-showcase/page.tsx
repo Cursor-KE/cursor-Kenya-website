@@ -6,7 +6,7 @@ import { getApprovedCommunityShowcase } from '@/lib/queries'
 export const revalidate = 60
 
 export const metadata = {
-  title: 'Community showcase | Cursor Kenya',
+  title: 'Community showcase',
   description: 'Projects built with Cursor, Codex, and Claude by the Kenya community.',
 }
 

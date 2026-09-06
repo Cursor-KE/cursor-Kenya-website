@@ -18,11 +18,11 @@ export async function generateMetadata ({
     const rows = await db.select().from(forms).where(eq(forms.slug, slug)).limit(1)
     const form = rows[0]
     return {
-      title: form ? `${form.title} | Cursor Kenya` : 'Form',
+      title: form ? form.title : 'Form',
       description: 'Submit a response',
     }
   } catch {
-    return { title: 'Form | Cursor Kenya', description: 'Submit a response' }
+    return { title: 'Form', description: 'Submit a response' }
   }
 }
 

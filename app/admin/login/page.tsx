@@ -3,7 +3,7 @@ import { AuthForm } from '@/components/auth-form'
 import { getOptionalCurrentUser } from '@/lib/auth/session'
 
 export const metadata = {
-  title: 'Admin sign in | Cursor Kenya',
+  title: 'Admin sign in',
 }
 
 export default async function AdminLoginPage () {

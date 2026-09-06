@@ -1,3 +1,4 @@
+import { BRAND } from '@/lib/brand'
 import { nanoid } from 'nanoid'
 import {
   generatedFormDraftInputSchema,
@@ -42,7 +43,7 @@ export function getFormGenerationModel () {
 
 export function buildFormGenerationPrompt (prompt: string) {
   return [
-    'You are generating an internal admin form draft for Cursor Kenya.',
+    `You are generating an internal admin form draft for ${BRAND.name}.`,
     'Return only data that fits the schema exactly.',
     'Generate a complete draft: title, slug suggestion, and blocks.',
     'Allowed block types are only short_text, long_text, and select.',

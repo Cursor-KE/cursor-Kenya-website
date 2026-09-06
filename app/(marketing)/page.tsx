@@ -1,3 +1,4 @@
+import { BRAND } from '@/lib/brand'
 import { ArrowRight } from 'lucide-react'
 import { CountdownTimer } from '@/components/countdown-timer'
 import { EventCard } from '@/components/event-card'
@@ -22,7 +23,7 @@ async function HeroCountdown () {
   return (
     <div className="mt-12">
       <p className="mb-4 text-center text-sm font-medium uppercase tracking-[0.2em] text-primary">
-        Next Cursor Kenya Event
+        Next {BRAND.name} Event
       </p>
       <CountdownTimer targetIso={next?.startAt ?? null} />
     </div>
@@ -75,7 +76,7 @@ export default function HomePage () {
         <div className="relative mx-auto max-w-4xl text-center">
           <FadeIn>
             <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl sm:leading-[1.05]">
-              Cursor Kenya
+              {BRAND.name}
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
               Meetups, hackathons, and workshops for builders across Kenya using Cursor and AI to build

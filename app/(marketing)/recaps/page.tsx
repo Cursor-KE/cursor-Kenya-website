@@ -1,3 +1,4 @@
+import { BRAND } from '@/lib/brand'
 import { and, desc, eq, lte } from 'drizzle-orm'
 import Link from 'next/link'
 import { ArrowUpRight, Clock3, Newspaper } from 'lucide-react'
@@ -23,7 +24,7 @@ export default async function RecapsPage () {
   return <div className="px-4 py-14 sm:px-6 sm:py-20">
     <div className="mx-auto max-w-6xl">
       <header className="grid gap-6 border-b border-border/80 pb-10 lg:grid-cols-[1fr_auto] lg:items-end">
-        <div><p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary">Community field notes</p><h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">Recaps from the room.</h1><p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">What we built, learned, and talked about at Cursor Kenya gatherings.</p></div>
+        <div><p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary">Community field notes</p><h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">Recaps from the room.</h1><p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">What we built, learned, and talked about at {BRAND.name} gatherings.</p></div>
         <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground"><span className="size-2 rounded-full bg-primary shadow-[0_0_18px_var(--glow-strong)]" />{posts.length} published {posts.length === 1 ? 'note' : 'notes'}</div>
       </header>
 

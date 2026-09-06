@@ -1,5 +1,7 @@
 'use client'
 
+import { BRAND } from '@/lib/brand'
+
 import Link from 'next/link'
 import { useLinkStatus } from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -116,11 +118,11 @@ export function AdminChrome ({
             className="group flex min-w-0 items-center gap-3 rounded-lg px-1 py-1 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring"
           >
             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-[0_0_28px_var(--glow)]">
-              CK
+              {BRAND.monogram}
             </span>
             <span className="min-w-0 group-data-[collapsible=icon]:hidden">
               <span className="block truncate text-sm font-semibold text-sidebar-foreground">
-                Cursor Kenya
+                {BRAND.name}
               </span>
               <span className="block truncate text-xs text-muted-foreground">
                 Admin console
@@ -202,7 +204,7 @@ export function AdminChrome ({
             <SidebarTrigger className="shrink-0" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">Admin workspace</p>
-              <p className="truncate text-xs text-muted-foreground">Cursor Kenya</p>
+              <p className="truncate text-xs text-muted-foreground">{BRAND.name}</p>
             </div>
             {pendingMobileBadge}
           </div>

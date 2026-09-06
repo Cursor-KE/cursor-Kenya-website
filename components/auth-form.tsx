@@ -1,5 +1,7 @@
 'use client'
 
+import { BRAND } from '@/lib/brand'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -58,7 +60,7 @@ export function AuthForm () {
         Admin access
       </h1>
       <p className="mt-2 text-center text-sm text-muted-foreground">
-        Sign in to manage Cursor Kenya content. New admin accounts require super-user approval.
+        Sign in to manage {BRAND.name} content. New admin accounts require super-user approval.
       </p>
       <Tabs defaultValue="signin" className="mt-8">
         <TabsList className="grid w-full grid-cols-2 bg-secondary/80">

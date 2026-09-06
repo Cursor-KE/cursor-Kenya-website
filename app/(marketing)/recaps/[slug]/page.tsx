@@ -22,7 +22,7 @@ export async function generateMetadata ({ params }: { params: Promise<{ slug: st
   const { slug } = await params
   const post = await getPublishedRecap(slug)
   if (!post) return { title: 'Recap not found' }
-  return { title: `${post.title} | Cursor Kenya`, description: post.excerpt }
+  return { title: post.title, description: post.excerpt }
 }
 
 export default async function RecapDetailPage ({ params }: { params: Promise<{ slug: string }> }) {

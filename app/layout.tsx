@@ -1,3 +1,4 @@
+import { BRAND } from '@/lib/brand'
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
@@ -17,31 +18,29 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
   title: {
-    default: 'Cursor Kenya',
-    template: '%s | Cursor Kenya',
+    default: BRAND.name,
+    template: `%s | ${BRAND.name}`,
   },
-  description:
-    'Kenya developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
+  description: BRAND.description,
   openGraph: {
-    title: 'Cursor Kenya',
-    description:
-      'Kenya developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
+    title: BRAND.name,
+    description: BRAND.description,
     type: 'website',
-    siteName: 'Cursor Kenya',
+    siteName: BRAND.name,
     images: [
       {
-        url: '/opengraph-image.jpg',
-        width: 1024,
-        height: 1024,
-        alt: 'Cursor Kenya — community logo',
+        url: BRAND.assets.openGraph,
+        width: 1200,
+        height: 630,
+        alt: `${BRAND.name} — community logo`,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Cursor Kenya',
-    description:
-      'Kenya developer community for Cursor and AI-assisted coding — events, gallery, and meetups.',
+    images: [BRAND.assets.twitter],
+    title: BRAND.name,
+    description: BRAND.description,
   },
 }
 

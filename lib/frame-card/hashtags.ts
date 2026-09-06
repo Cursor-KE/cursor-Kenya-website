@@ -1,6 +1,8 @@
-/** Default hashtag chips — same set as [Cursor-photobooth](https://github.com/Blackie360/Cursor-photobooth). */
+import { BRAND } from '@/lib/brand'
+
+/** Default community hashtag chips for newly generated meetup cards. */
 export const FRAME_CARD_HASHTAGS: string[] = [
-  '#CursorAINairobi',
+  BRAND.hashtag,
   '#DevCommunity',
   '#Techmeetup',
   '#buildinpublic',

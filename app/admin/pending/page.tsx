@@ -6,7 +6,7 @@ import { getOptionalCurrentUser } from '@/lib/auth/session'
 import { cn } from '@/lib/utils'
 
 export const metadata = {
-  title: 'Admin approval pending | Cursor Kenya',
+  title: 'Admin approval pending',
 }
 
 export default async function AdminPendingPage () {
