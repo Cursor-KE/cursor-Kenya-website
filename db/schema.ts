@@ -367,6 +367,7 @@ export const communityShowcase = pgTable(
     builderName: text('builder_name').notNull(),
     builderEmail: text('builder_email').notNull(),
     screenshotUrls: jsonb('screenshot_urls').notNull().$type<string[]>(),
+    submitterIpHash: text('submitter_ip_hash'),
     projectKind: text('project_kind').notNull().default('other'),
     status: showcaseStatusEnum('status').notNull().default('pending'),
     featured: boolean('featured').default(false).notNull(),
@@ -380,6 +381,8 @@ export const communityShowcase = pgTable(
   (t) => [
     index('community_showcase_status_idx').on(t.status),
     index('community_showcase_featured_sort_idx').on(t.featured, t.sortOrder),
+    index('community_showcase_builder_email_created_at_idx').on(t.builderEmail, t.createdAt),
+    index('community_showcase_submitter_ip_created_at_idx').on(t.submitterIpHash, t.createdAt),
   ]
 )
 
