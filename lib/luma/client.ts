@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { lumaEvents } from '@/db/schema'
 import type { CommunityEvent } from '@/lib/luma/types'
@@ -68,11 +68,27 @@ async function persistFetchedEvents (events: CommunityEvent[]) {
         endAt: sql`excluded.end_at`,
         url: sql`excluded.url`,
         coverUrl: sql`excluded.cover_url`,
-        status: sql`excluded.status`,
         rawPayload: sql`excluded.raw_payload`,
         updatedAt: sql`excluded.updated_at`,
       },
     })
+}
+
+async function removeCanceledEvents (events: CommunityEvent[]): Promise<CommunityEvent[]> {
+  if (events.length === 0) return events
+
+  const rows = await db
+    .select({ id: lumaEvents.id })
+    .from(lumaEvents)
+    .where(and(
+      inArray(lumaEvents.id, events.map((event) => event.id)),
+      eq(lumaEvents.status, 'canceled')
+    ))
+
+  if (rows.length === 0) return events
+
+  const canceledIds = new Set(rows.map((row) => row.id))
+  return events.filter((event) => !canceledIds.has(event.id))
 }
 
 async function getStoredLumaEvents (): Promise<CommunityEvent[]> {
@@ -144,7 +160,12 @@ export async function getLumaEvents (): Promise<CommunityEvent[]> {
       } catch (err) {
         console.error('persistFetchedEvents', err)
       }
-      return fetched
+      try {
+        return await removeCanceledEvents(fetched)
+      } catch (err) {
+        console.error('removeCanceledEvents', err)
+        return fetched
+      }
     }
   } catch (err) {
     console.error('fetchLumaEventsFromApi', err)
