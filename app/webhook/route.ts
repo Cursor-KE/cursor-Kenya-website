@@ -1,16 +1,27 @@
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import {
-  processLumaWebhookBody,
+  allowUnverifiedLumaWebhooks,
+  isLumaWebhookSignatureConfigured,
+  isLumaWebhookTokenConfigured,
   verifyLumaWebhookSignature,
   verifyLumaWebhookToken,
-} from '@/lib/luma/webhook'
+} from '@/lib/luma/webhook-auth'
+import { processLumaWebhookBody } from '@/lib/luma/webhook'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST (request: Request) {
-  if (!verifyLumaWebhookToken(request)) {
+  const hasTokenAuth = isLumaWebhookTokenConfigured()
+  const hasSignatureAuth = isLumaWebhookSignatureConfigured()
+  const allowsUnverified = allowUnverifiedLumaWebhooks()
+
+  if (!hasTokenAuth && !hasSignatureAuth && !allowsUnverified) {
+    return NextResponse.json({ error: 'Webhook authentication is not configured' }, { status: 401 })
+  }
+
+  if (hasTokenAuth && !verifyLumaWebhookToken(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -19,7 +30,7 @@ export async function POST (request: Request) {
     return NextResponse.json({ error: 'Missing webhook body' }, { status: 400 })
   }
 
-  if (!verifyLumaWebhookSignature(request, rawBody)) {
+  if (hasSignatureAuth && !verifyLumaWebhookSignature(request, rawBody)) {
     return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 })
   }
 
