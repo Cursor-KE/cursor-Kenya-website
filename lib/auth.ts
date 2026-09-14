@@ -3,15 +3,14 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from '@/db'
 import { account, session, user, verification } from '@/db/schema'
 import { SUPER_USER_EMAIL } from '@/lib/auth/admin'
+import { getBetterAuthSecret } from '@/lib/auth/secret'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: { user, session, account, verification },
   }),
-  secret:
-    process.env.BETTER_AUTH_SECRET ??
-    (process.env.NODE_ENV === 'production' ? '' : 'dev-better-auth-secret-min-32-chars-long!'),
+  secret: getBetterAuthSecret(),
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
   emailAndPassword: { enabled: true },
   user: {

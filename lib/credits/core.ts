@@ -1,5 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'node:crypto'
 import { z } from 'zod'
+import { getCreditVerificationSecret } from '@/lib/auth/secret'
 
 export const MAX_CSV_BYTES = 1_000_000
 export const MAX_CSV_ROWS = 5_000
@@ -61,8 +62,7 @@ export function revealCredit (stored: string): string {
 }
 
 export function hashVerificationValue (value: string): string {
-  const secret = process.env.BETTER_AUTH_SECRET ?? 'development-only-credit-secret'
-  return createHmac('sha256', secret).update(value).digest('hex')
+  return createHmac('sha256', getCreditVerificationSecret()).update(value).digest('hex')
 }
 
 function parseCsvLine (line: string): string[] {
