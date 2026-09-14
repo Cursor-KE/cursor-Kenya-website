@@ -9,7 +9,9 @@ import {
   previewInventoryCsv,
   protectCredit,
   revealCredit,
+  hashVerificationValue,
 } from '../lib/credits/core.ts'
+import { getBetterAuthSecret } from '../lib/auth/secret.ts'
 
 test('only super users can create credit campaigns', () => {
   assert.equal(canCreateCreditCampaign('super_user'), true)
@@ -45,5 +47,42 @@ test('credit values round-trip through configured encryption', () => {
   } finally {
     if (previous === undefined) delete process.env.CREDIT_ENCRYPTION_KEY
     else process.env.CREDIT_ENCRYPTION_KEY = previous
+  }
+})
+
+test('production auth secret configuration fails closed', () => {
+  const previousNodeEnv = process.env.NODE_ENV
+  const previousSecret = process.env.BETTER_AUTH_SECRET
+  process.env.NODE_ENV = 'production'
+  delete process.env.BETTER_AUTH_SECRET
+
+  try {
+    assert.throws(() => getBetterAuthSecret(), /BETTER_AUTH_SECRET must be set in production/)
+    assert.throws(() => hashVerificationValue('verification-id:123456'), /BETTER_AUTH_SECRET must be set in production/)
+  } finally {
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+    else process.env.NODE_ENV = previousNodeEnv
+    if (previousSecret === undefined) delete process.env.BETTER_AUTH_SECRET
+    else process.env.BETTER_AUTH_SECRET = previousSecret
+  }
+})
+
+test('credit verification hashes use configured auth secret in production', () => {
+  const previousNodeEnv = process.env.NODE_ENV
+  const previousSecret = process.env.BETTER_AUTH_SECRET
+  process.env.NODE_ENV = 'production'
+  process.env.BETTER_AUTH_SECRET = 'production-secret-used-for-test'
+
+  try {
+    const first = hashVerificationValue('verification-id:123456')
+    const second = hashVerificationValue('verification-id:123456')
+
+    assert.equal(first, second)
+    assert.notEqual(first, hashVerificationValue('verification-id:654321'))
+  } finally {
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+    else process.env.NODE_ENV = previousNodeEnv
+    if (previousSecret === undefined) delete process.env.BETTER_AUTH_SECRET
+    else process.env.BETTER_AUTH_SECRET = previousSecret
   }
 })
