@@ -4,6 +4,7 @@ import { AdminPageShell } from '@/components/admin-page-shell'
 import { db } from '@/db'
 import { forms } from '@/db/schema'
 import { FormEditor } from '@/app/admin/(dashboard)/forms/form-editor'
+import { requireApprovedAdmin } from '@/lib/auth/session'
 import { formDefinitionSchema } from '@/lib/forms/types'
 
 export default async function EditFormPage ({
@@ -11,6 +12,8 @@ export default async function EditFormPage ({
 }: {
   params: Promise<{ id: string }>
 }) {
+  await requireApprovedAdmin()
+
   const { id } = await params
   const rows = await db.select().from(forms).where(eq(forms.id, id)).limit(1)
   const form = rows[0]

@@ -6,6 +6,7 @@ import { AdminPageShell } from '@/components/admin-page-shell'
 import { buttonVariants } from '@/components/ui/button'
 import { db } from '@/db'
 import { formResponses, forms, testimonials } from '@/db/schema'
+import { requireApprovedAdmin } from '@/lib/auth/session'
 import { formDefinitionSchema, type FormBlock } from '@/lib/forms/types'
 import {
   AnswerTestimonialControls,
@@ -28,6 +29,8 @@ export default async function AdminResponseDetailPage ({
 }: {
   params: Promise<{ id: string }>
 }) {
+  await requireApprovedAdmin()
+
   const { id } = await params
 
   const rows = await db

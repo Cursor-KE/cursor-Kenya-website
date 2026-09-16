@@ -9,6 +9,7 @@ import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { requireApprovedAdmin } from '@/lib/auth/session'
 import {
   Card,
   CardAction,
@@ -19,6 +20,8 @@ import {
 } from '@/components/ui/card'
 
 async function AdminFormsListContent () {
+  await requireApprovedAdmin()
+
   const rows = await db.select().from(forms).orderBy(desc(forms.updatedAt))
 
   return (
