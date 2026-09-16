@@ -1,13 +1,12 @@
 import { Suspense } from 'react'
 import { type InferSelectModel, desc, eq } from 'drizzle-orm'
-import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { AdminPageShell } from '@/components/admin-page-shell'
 import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { db } from '@/db'
 import { user } from '@/db/schema'
 import { approveAdminUser, rejectAdminUser } from '@/lib/actions/admin-users'
-import { ADMIN_FORBIDDEN, requireSuperUser } from '@/lib/auth/session'
+import { requireSuperUserOrRedirect } from '@/lib/auth/admin-route'
 
 type AdminUserRow = InferSelectModel<typeof user>
 
@@ -132,14 +131,7 @@ async function AdminUsersContent () {
 }
 
 async function AdminUsersGate () {
-  try {
-    await requireSuperUser()
-  } catch (error) {
-    if (error instanceof Error && error.message === ADMIN_FORBIDDEN) {
-      redirect('/admin')
-    }
-    throw error
-  }
+  await requireSuperUserOrRedirect('/admin')
   return <AdminUsersContent />
 }
 

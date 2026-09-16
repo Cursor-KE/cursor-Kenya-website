@@ -10,13 +10,13 @@ import {
   creditProviders,
   lumaEvents,
 } from '@/db/schema'
-import { requireApprovedAdmin } from '@/lib/auth/session'
+import { requireApprovedAdminOrRedirect } from '@/lib/auth/admin-route'
 import { AdminPageShell } from '@/components/admin-page-shell'
 import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { CreditsAdminClient } from './credits-admin-client'
 
 async function CreditsAdminContent () {
-  const { user } = await requireApprovedAdmin()
+  const { user } = await requireApprovedAdminOrRedirect()
   const [providers, campaigns, allocations, guests, inventory, luma, metrics, claimCounts] = await Promise.all([
     db.select().from(creditProviders).orderBy(asc(creditProviders.name)),
     db.select().from(creditCampaigns).orderBy(desc(creditCampaigns.createdAt)),

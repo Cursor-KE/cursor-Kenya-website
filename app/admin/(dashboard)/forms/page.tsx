@@ -17,8 +17,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { requireApprovedAdminOrRedirect } from '@/lib/auth/admin-route'
 
 async function AdminFormsListContent () {
+  await requireApprovedAdminOrRedirect()
+
   const rows = await db.select().from(forms).orderBy(desc(forms.updatedAt))
 
   return (
