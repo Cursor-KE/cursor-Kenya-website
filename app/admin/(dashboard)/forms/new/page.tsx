@@ -1,7 +1,10 @@
 import { AdminPageShell } from '@/components/admin-page-shell'
+import { requireApprovedAdminOrRedirect } from '@/lib/auth/admin-route'
 import { NewFormChooser } from './new-form-chooser'
 
-export default function NewFormPage () {
+export default async function NewFormPage () {
+  await requireApprovedAdminOrRedirect()
+
   return (
     <AdminPageShell
       title="New form"

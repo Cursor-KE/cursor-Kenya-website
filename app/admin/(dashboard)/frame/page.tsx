@@ -3,8 +3,11 @@ import { AdminPageShell } from '@/components/admin-page-shell'
 import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
 import { getFrameCardSettings } from '@/lib/queries'
 import { FrameCardAdminClient } from '@/app/admin/(dashboard)/frame/frame-card-admin-client'
+import { requireApprovedAdminOrRedirect } from '@/lib/auth/admin-route'
 
 async function AdminFrameCardContent () {
+  await requireApprovedAdminOrRedirect()
+
   const settings = await getFrameCardSettings()
   return <FrameCardAdminClient settings={settings} />
 }

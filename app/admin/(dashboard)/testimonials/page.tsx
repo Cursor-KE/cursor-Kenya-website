@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { AdminPageShell } from '@/components/admin-page-shell'
 import { AdminContentSkeleton } from '@/components/admin-page-skeleton'
+import { requireApprovedAdminOrRedirect } from '@/lib/auth/admin-route'
 import { getAllTestimonialsForAdmin } from '@/lib/queries'
 import {
   TestimonialsAdminClient,
@@ -8,6 +9,8 @@ import {
 } from './testimonials-admin-client'
 
 async function AdminTestimonialsContent () {
+  await requireApprovedAdminOrRedirect()
+
   const rows = await getAllTestimonialsForAdmin()
   const initial: AdminTestimonial[] = rows.map((r) => ({
     id: r.id,

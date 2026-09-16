@@ -10,10 +10,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { setRecapPublication } from '@/lib/actions/recaps'
+import { requireApprovedAdminOrRedirect } from '@/lib/auth/admin-route'
 import { recapDateFormatter } from '@/lib/recaps/display'
 import { cn } from '@/lib/utils'
 
 async function AdminRecapsContent () {
+  await requireApprovedAdminOrRedirect()
+
   const posts = await db.select({
     id: recapPosts.id,
     title: recapPosts.title,

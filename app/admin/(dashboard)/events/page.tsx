@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table'
 import { db } from '@/db'
 import { lumaEvents, lumaGuests, lumaTickets, lumaWebhookDeliveries } from '@/db/schema'
+import { requireApprovedAdminOrRedirect } from '@/lib/auth/admin-route'
 import { cn } from '@/lib/utils'
 
 function formatDateTime (value: Date | null) {
@@ -74,6 +75,8 @@ function StatCard ({
 }
 
 async function AdminEventsContent () {
+  await requireApprovedAdminOrRedirect()
+
   const now = new Date()
 
   const [

@@ -15,8 +15,11 @@ import {
 } from '@/components/ui/card'
 import { db } from '@/db'
 import { formResponses, forms } from '@/db/schema'
+import { requireApprovedAdminOrRedirect } from '@/lib/auth/admin-route'
 
 async function AdminResponsesContent () {
+  await requireApprovedAdminOrRedirect()
+
   const responses = await db
     .select({
       id: formResponses.id,
