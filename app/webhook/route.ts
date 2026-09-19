@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import {
-  processLumaWebhookBody,
+  hasLumaWebhookAuthenticationConfigured,
   verifyLumaWebhookSignature,
   verifyLumaWebhookToken,
-} from '@/lib/luma/webhook'
+} from '@/lib/luma/webhook-auth'
+import { processLumaWebhookBody } from '@/lib/luma/webhook'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST (request: Request) {
+  if (!hasLumaWebhookAuthenticationConfigured()) {
+    return NextResponse.json({ error: 'Webhook authentication is not configured' }, { status: 503 })
+  }
+
   if (!verifyLumaWebhookToken(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
