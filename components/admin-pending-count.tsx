@@ -2,7 +2,12 @@ import { eq, sql } from 'drizzle-orm'
 import { Badge } from '@/components/ui/badge'
 import { db } from '@/db'
 import { user } from '@/db/schema'
-import { requireApprovedAdmin } from '@/lib/auth/session'
+import {
+  ADMIN_APPROVAL_REQUIRED,
+  ADMIN_FORBIDDEN,
+  SESSION_UNAUTHORIZED,
+  requireApprovedAdmin,
+} from '@/lib/auth/session'
 
 export async function getPendingAdminCount () {
   const rows = await db
@@ -13,9 +18,26 @@ export async function getPendingAdminCount () {
   return rows[0]?.count ?? 0
 }
 
+function isExpectedAdminAccessError (error: unknown): boolean {
+  return error instanceof Error && [
+    ADMIN_APPROVAL_REQUIRED,
+    ADMIN_FORBIDDEN,
+    SESSION_UNAUTHORIZED,
+  ].includes(error.message)
+}
+
+async function canShowPendingAdminBadge (): Promise<boolean> {
+  try {
+    const currentUser = await requireApprovedAdmin()
+    return currentUser.user.role === 'super_user'
+  } catch (error) {
+    if (isExpectedAdminAccessError(error)) return false
+    throw error
+  }
+}
+
 export async function PendingAdminNavBadge () {
-  const currentUser = await requireApprovedAdmin()
-  if (currentUser.user.role !== 'super_user') return null
+  if (!(await canShowPendingAdminBadge())) return null
 
   const count = await getPendingAdminCount()
   if (count <= 0) return null
@@ -28,8 +50,7 @@ export async function PendingAdminNavBadge () {
 }
 
 export async function PendingAdminMobileBadge () {
-  const currentUser = await requireApprovedAdmin()
-  if (currentUser.user.role !== 'super_user') return null
+  if (!(await canShowPendingAdminBadge())) return null
 
   const count = await getPendingAdminCount()
   if (count <= 0) return null

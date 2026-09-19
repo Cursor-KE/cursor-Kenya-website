@@ -25,6 +25,7 @@ import {
   protectCredit,
   slugSchema,
 } from '@/lib/credits/core'
+import { parseCreditDateTimeLocal } from '@/lib/credits/datetime'
 
 export type CreditActionResult = { ok: boolean; message: string }
 
@@ -33,10 +34,7 @@ function text (formData: FormData, key: string): string {
 }
 
 function optionalDate (value: string): Date | null {
-  if (!value) return null
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) throw new Error('Enter a valid date and time.')
-  return parsed
+  return parseCreditDateTimeLocal(value)
 }
 
 function messageFor (error: unknown): string {

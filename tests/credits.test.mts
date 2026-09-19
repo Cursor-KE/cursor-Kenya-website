@@ -10,6 +10,7 @@ import {
   protectCredit,
   revealCredit,
 } from '../lib/credits/core.ts'
+import { formatCreditDateTimeLocal, parseCreditDateTimeLocal } from '../lib/credits/datetime.ts'
 
 test('only super users can create credit campaigns', () => {
   assert.equal(canCreateCreditCampaign('super_user'), true)
@@ -46,4 +47,16 @@ test('credit values round-trip through configured encryption', () => {
     if (previous === undefined) delete process.env.CREDIT_ENCRYPTION_KEY
     else process.env.CREDIT_ENCRYPTION_KEY = previous
   }
+})
+
+test('credit claim windows round-trip as Nairobi wall time', () => {
+  const parsed = parseCreditDateTimeLocal('2026-08-01T09:30')
+
+  assert.equal(parsed?.toISOString(), '2026-08-01T06:30:00.000Z')
+  assert.equal(formatCreditDateTimeLocal('2026-08-01T06:30:00.000Z'), '2026-08-01T09:30')
+})
+
+test('credit claim windows reject invalid local date-times', () => {
+  assert.throws(() => parseCreditDateTimeLocal('2026-02-31T09:30'), /valid date and time/)
+  assert.throws(() => parseCreditDateTimeLocal('2026-08-01'), /valid date and time/)
 })
