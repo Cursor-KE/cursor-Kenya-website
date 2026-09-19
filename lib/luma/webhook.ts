@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -90,7 +90,7 @@ function parseSignatures (header: string): string[] {
 
 export function verifyLumaWebhookSignature (request: Request, rawBody: string): boolean {
   const secret = process.env.LUMA_WEBHOOK_SECRET
-  if (!secret) return true
+  if (!secret) return false
 
   const { id, timestamp, signature } = getSignatureHeaders(request)
   if (!id || !timestamp || !signature) return false
@@ -111,7 +111,7 @@ export function verifyLumaWebhookSignature (request: Request, rawBody: string): 
 
 export function verifyLumaWebhookToken (request: Request): boolean {
   const expected = process.env.LUMA_WEBHOOK_ROUTE_TOKEN
-  if (!expected) return true
+  if (!expected) return false
 
   const url = new URL(request.url)
   const queryToken = url.searchParams.get('token')
@@ -226,15 +226,15 @@ async function upsertLumaGuest (data: unknown) {
       target: lumaGuests.id,
       set: {
         eventId: guest.eventId,
-        userId: guest.userId,
-        email: guest.email,
-        name: guest.name,
-        firstName: guest.firstName,
-        lastName: guest.lastName,
-        approvalStatus: guest.approvalStatus,
-        phoneNumber: guest.phoneNumber,
-        registeredAt: guest.registeredAt,
-        checkedInAt: guest.checkedInAt,
+        userId: sql`coalesce(excluded.user_id, ${lumaGuests.userId})`,
+        email: sql`coalesce(excluded.email, ${lumaGuests.email})`,
+        name: sql`coalesce(excluded.name, ${lumaGuests.name})`,
+        firstName: sql`coalesce(excluded.first_name, ${lumaGuests.firstName})`,
+        lastName: sql`coalesce(excluded.last_name, ${lumaGuests.lastName})`,
+        approvalStatus: sql`coalesce(excluded.approval_status, ${lumaGuests.approvalStatus})`,
+        phoneNumber: sql`coalesce(excluded.phone_number, ${lumaGuests.phoneNumber})`,
+        registeredAt: sql`coalesce(excluded.registered_at, ${lumaGuests.registeredAt})`,
+        checkedInAt: sql`coalesce(excluded.checked_in_at, ${lumaGuests.checkedInAt})`,
         rawPayload: guest.rawPayload,
         updatedAt: guest.updatedAt,
       },
@@ -275,12 +275,12 @@ async function upsertLumaTicket (data: Record<string, unknown>, ticketData: unkn
       target: lumaTickets.id,
       set: {
         eventId: ticket.eventId,
-        guestId: ticket.guestId,
-        ticketTypeId: ticket.ticketTypeId,
-        name: ticket.name,
-        amount: ticket.amount,
-        currency: ticket.currency,
-        checkedInAt: ticket.checkedInAt,
+        guestId: sql`coalesce(excluded.guest_id, ${lumaTickets.guestId})`,
+        ticketTypeId: sql`coalesce(excluded.ticket_type_id, ${lumaTickets.ticketTypeId})`,
+        name: sql`coalesce(excluded.name, ${lumaTickets.name})`,
+        amount: sql`coalesce(excluded.amount, ${lumaTickets.amount})`,
+        currency: sql`coalesce(excluded.currency, ${lumaTickets.currency})`,
+        checkedInAt: sql`coalesce(excluded.checked_in_at, ${lumaTickets.checkedInAt})`,
         rawPayload: ticket.rawPayload,
         updatedAt: ticket.updatedAt,
       },
@@ -319,12 +319,13 @@ async function markLumaEventCanceled (payload: LumaWebhookPayload) {
   const id = getLumaObjectId(payload)
   if (!id) return false
 
-  await db
+  const canceled = await db
     .update(lumaEvents)
     .set({ status: 'canceled', updatedAt: new Date() })
     .where(eq(lumaEvents.id, id))
+    .returning({ id: lumaEvents.id })
 
-  return true
+  return canceled.length > 0
 }
 
 async function handleWebhookPayload (payload: LumaWebhookPayload): Promise<DeliveryStatus> {
@@ -357,21 +358,41 @@ export async function processLumaWebhookBody (rawBody: string) {
   const payload = lumaWebhookPayloadSchema.parse(json)
   const payloadRecord = isRecord(json) ? json : { type: payload.type, data: payload.data }
   const objectId = getLumaObjectId(payload)
+  const delivery = {
+    id: deliveryId,
+    eventType: payload.type,
+    lumaObjectId: objectId,
+    payload: payloadRecord,
+    status: 'processing' as const,
+  }
 
   const inserted = await db
     .insert(lumaWebhookDeliveries)
-    .values({
-      id: deliveryId,
-      eventType: payload.type,
-      lumaObjectId: objectId,
-      payload: payloadRecord,
-      status: 'processing',
-    })
+    .values(delivery)
     .onConflictDoNothing()
     .returning({ id: lumaWebhookDeliveries.id })
 
+  const isRetry = inserted.length === 0
+
   if (inserted.length === 0) {
-    return { duplicate: true, eventType: payload.type, objectId }
+    const [existingDelivery] = await db
+      .select({ status: lumaWebhookDeliveries.status })
+      .from(lumaWebhookDeliveries)
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
+      .limit(1)
+
+    if (!existingDelivery || existingDelivery.status === 'processed' || existingDelivery.status === 'ignored') {
+      return { duplicate: true, eventType: payload.type, objectId, status: existingDelivery?.status }
+    }
+
+    await db
+      .update(lumaWebhookDeliveries)
+      .set({
+        ...delivery,
+        error: null,
+        processedAt: null,
+      })
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
   }
 
   try {
@@ -390,7 +411,7 @@ export async function processLumaWebhookBody (rawBody: string) {
       revalidatePath('/events')
     }
 
-    return { duplicate: false, eventType: payload.type, objectId, status }
+    return { duplicate: isRetry, retried: isRetry, eventType: payload.type, objectId, status }
   } catch (error) {
     await db
       .update(lumaWebhookDeliveries)
