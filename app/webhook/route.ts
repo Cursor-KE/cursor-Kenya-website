@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import {
+  isLumaWebhookSignatureConfigured,
+  isLumaWebhookTokenConfigured,
   processLumaWebhookBody,
   verifyLumaWebhookSignature,
   verifyLumaWebhookToken,
@@ -10,7 +12,14 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST (request: Request) {
-  if (!verifyLumaWebhookToken(request)) {
+  const hasRouteToken = isLumaWebhookTokenConfigured()
+  const hasSignatureSecret = isLumaWebhookSignatureConfigured()
+
+  if (!hasRouteToken && !hasSignatureSecret) {
+    return NextResponse.json({ error: 'Luma webhook authentication is not configured' }, { status: 503 })
+  }
+
+  if (hasRouteToken && !verifyLumaWebhookToken(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -19,7 +28,7 @@ export async function POST (request: Request) {
     return NextResponse.json({ error: 'Missing webhook body' }, { status: 400 })
   }
 
-  if (!verifyLumaWebhookSignature(request, rawBody)) {
+  if (hasSignatureSecret && !verifyLumaWebhookSignature(request, rawBody)) {
     return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 })
   }
 

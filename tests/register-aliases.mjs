@@ -5,6 +5,10 @@ import { pathToFileURL } from 'node:url'
 
 const root = path.resolve(import.meta.dirname, '..')
 const extensions = ['.ts', '.tsx', '.mts', '.js', '.mjs']
+const stubSpecifiers = new Map([
+  ['server-only', path.join(root, 'tests/stubs/server-only.mjs')],
+  ['next/cache', path.join(root, 'tests/stubs/next-cache.mjs')],
+])
 
 function resolveAppSpecifier (specifier) {
   const basePath = path.join(root, specifier.slice(2))
@@ -32,6 +36,11 @@ function resolveAppSpecifier (specifier) {
 
 registerHooks({
   resolve (specifier, context, nextResolve) {
+    const stubPath = stubSpecifiers.get(specifier)
+    if (stubPath) {
+      return nextResolve(pathToFileURL(stubPath).href, context)
+    }
+
     if (specifier.startsWith('@/')) {
       const resolved = resolveAppSpecifier(specifier)
       if (resolved) {
