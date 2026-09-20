@@ -25,7 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { db } from '@/db'
 import { formResponses, forms, images, user, videos } from '@/db/schema'
-import { requireApprovedAdmin } from '@/lib/auth/session'
+import { getApprovedAdminOrRedirect } from '@/lib/auth/admin-access'
 
 const responseDateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -36,7 +36,7 @@ const responseDateFormatter = new Intl.DateTimeFormat('en-US', {
 })
 
 async function AdminDashboardContent () {
-  const currentUser = await requireApprovedAdmin()
+  const currentUser = await getApprovedAdminOrRedirect()
 
   const [statsRows, recent, pendingAdminRows] = await Promise.all([
     db.execute(sql`

@@ -13,7 +13,6 @@ import {
   creditImports,
   creditInventory,
   creditProviders,
-  lumaGuests,
 } from '@/db/schema'
 import { requireApprovedAdmin, requireSuperUser } from '@/lib/auth/session'
 import {
@@ -25,6 +24,7 @@ import {
   protectCredit,
   slugSchema,
 } from '@/lib/credits/core'
+import { importEligibleLumaCreditGuests } from '@/lib/credits/luma-sync'
 
 export type CreditActionResult = { ok: boolean; message: string }
 
@@ -196,19 +196,7 @@ export async function importLumaCreditGuests (formData: FormData) {
   const campaignId = text(formData, 'campaignId')
   const [campaign] = await db.select({ lumaEventId: creditCampaigns.lumaEventId }).from(creditCampaigns).where(eq(creditCampaigns.id, campaignId)).limit(1)
   if (!campaign?.lumaEventId) throw new Error('Map this campaign to a Luma event before importing guests.')
-  const guests = await db.select().from(lumaGuests).where(eq(lumaGuests.eventId, campaign.lumaEventId))
-  let created = 0
-  let invalid = 0
-  for (const guest of guests) {
-    const parsed = emailSchema.safeParse(guest.email)
-    if (!parsed.success) { invalid++; continue }
-    const result = await db.insert(creditGuests).values({
-      id: nanoid(), campaignId, email: parsed.data, normalizedEmail: parsed.data,
-      name: guest.name, externalId: guest.id, source: 'luma',
-    }).onConflictDoNothing().returning({ id: creditGuests.id })
-    created += result.length
-  }
-  const summary = { created, skipped: guests.length - created - invalid, invalid, duplicates: guests.length - created - invalid }
+  const summary = await importEligibleLumaCreditGuests(campaignId, campaign.lumaEventId)
   const importId = nanoid()
   await db.insert(creditImports).values({ id: importId, kind: 'luma_guests', campaignId, createdByUserId: user.id, summary })
   await audit(user.id, 'luma_guests.imported', 'import', importId, { ...summary, lumaEventId: campaign.lumaEventId })

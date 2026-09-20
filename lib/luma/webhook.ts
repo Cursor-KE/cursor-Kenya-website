@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
 import { lumaEvents, lumaGuests, lumaTickets, lumaWebhookDeliveries } from '@/db/schema'
+import { syncLumaCreditGuestEligibility } from '@/lib/credits/luma-sync'
 
 const lumaWebhookEventTypeSchema = z.enum([
   'calendar.event.added',
@@ -217,7 +218,7 @@ function mapGuestData (data: unknown) {
 
 async function upsertLumaGuest (data: unknown) {
   const guest = mapGuestData(data)
-  if (!guest) return false
+  if (!guest) return null
 
   await db
     .insert(lumaGuests)
@@ -240,7 +241,9 @@ async function upsertLumaGuest (data: unknown) {
       },
     })
 
-  return true
+  await syncLumaCreditGuestEligibility(guest)
+
+  return guest
 }
 
 function mapTicketData (data: Record<string, unknown>, ticketData: unknown) {
@@ -306,7 +309,7 @@ async function syncGuestPayload (data: unknown) {
   if (!isRecord(data)) return false
 
   await upsertEmbeddedEvent(data)
-  const guestUpdated = await upsertLumaGuest(data)
+  const guestUpdated = Boolean(await upsertLumaGuest(data))
   const ticketsUpdated = await upsertTicketsFromGuestPayload(data)
 
   return guestUpdated || ticketsUpdated > 0
