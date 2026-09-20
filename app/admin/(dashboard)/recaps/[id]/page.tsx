@@ -10,6 +10,6 @@ export default async function EditRecapPage ({ params }: { params: Promise<{ id:
   const post = (await db.select().from(recapPosts).where(eq(recapPosts.id, id)).limit(1))[0]
   if (!post) notFound()
   return <AdminPageShell title="Edit recap" description={post.status === 'published' ? 'Changes to this published story appear publicly after saving.' : 'This draft is private until you publish it.'}>
-    <RecapEditor initial={{ id: post.id, title: post.title, slug: post.slug, excerpt: post.excerpt, content: post.content, coverImageUrl: post.coverImageUrl ?? '', status: post.status }} />
+    <RecapEditor key={post.id} initial={{ id: post.id, title: post.title, slug: post.slug, excerpt: post.excerpt, content: post.content, coverImageUrl: post.coverImageUrl ?? '', status: post.status }} />
   </AdminPageShell>
 }

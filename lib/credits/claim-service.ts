@@ -3,7 +3,7 @@ import 'server-only'
 import { and, count, desc, eq, gt, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { db } from '@/db'
-import { creditCampaigns, creditGuests, creditVerifications } from '@/db/schema'
+import { creditCampaigns, creditClaims, creditGuests, creditInventory, creditVerifications } from '@/db/schema'
 import { sendEmail } from '@/lib/email/nodemailer'
 import {
   hashVerificationValue,
@@ -71,6 +71,7 @@ type ClaimRow = {
   allocation_active: boolean
   provider_status: 'active' | 'archived'
   guest_id: string
+  guest_eligibility_status: 'eligible' | 'removed'
 }
 
 type InventoryRow = { id: string; encrypted_value: string }
@@ -92,25 +93,18 @@ export async function claimCredit (input: { verificationId: string; code: string
       const access = await tx.execute(sql`
         SELECT c.id AS campaign_id, c.status AS campaign_status, c.claim_starts_at, c.claim_ends_at,
                cp.id AS campaign_provider_id, cp.active AS allocation_active,
-               p.status AS provider_status, g.id AS guest_id
+               p.status AS provider_status, g.id AS guest_id, g.eligibility_status AS guest_eligibility_status
         FROM credit_campaigns c
         JOIN credit_campaign_providers cp ON cp.campaign_id = c.id
         JOIN credit_providers p ON p.id = cp.provider_id
         JOIN credit_guests g ON g.campaign_id = c.id
         WHERE c.id = ${verification.campaignId} AND c.slug = ${input.campaignSlug} AND p.slug = ${input.providerSlug}
           AND g.normalized_email = ${verification.normalizedEmail}
-          AND g.eligibility_status = 'eligible'
         LIMIT 1
         FOR UPDATE OF g
       `) as unknown as ClaimRow[]
       const row = access[0]
       if (!row) return { ok: false, code: 'not_eligible', message: 'No available credit could be claimed for this email.' }
-      const now = new Date()
-      if (row.campaign_status !== 'active' || !row.allocation_active || row.provider_status !== 'active') {
-        return { ok: false, code: 'not_active', message: 'This credit campaign is not currently accepting claims.' }
-      }
-      if (row.claim_starts_at && row.claim_starts_at > now) return { ok: false, code: 'not_started', message: 'Claims have not opened yet.' }
-      if (row.claim_ends_at && row.claim_ends_at < now) return { ok: false, code: 'ended', message: 'The claim window has ended.' }
 
       const existing = await tx.execute(sql`
         SELECT i.encrypted_value FROM credit_claims cl
@@ -119,6 +113,16 @@ export async function claimCredit (input: { verificationId: string; code: string
         LIMIT 1
       `) as unknown as InventoryRow[]
       if (existing[0]) return { ok: true, code: 'already_claimed', credit: revealCredit(existing[0].encrypted_value), message: 'Here is your previously claimed credit.' }
+
+      if (row.guest_eligibility_status !== 'eligible') {
+        return { ok: false, code: 'not_eligible', message: 'No available credit could be claimed for this email.' }
+      }
+      const now = new Date()
+      if (row.campaign_status !== 'active' || !row.allocation_active || row.provider_status !== 'active') {
+        return { ok: false, code: 'not_active', message: 'This credit campaign is not currently accepting claims.' }
+      }
+      if (row.claim_starts_at && row.claim_starts_at > now) return { ok: false, code: 'not_started', message: 'Claims have not opened yet.' }
+      if (row.claim_ends_at && row.claim_ends_at < now) return { ok: false, code: 'ended', message: 'The claim window has ended.' }
 
       const available = await tx.execute(sql`
         SELECT id, encrypted_value FROM credit_inventory
@@ -130,9 +134,18 @@ export async function claimCredit (input: { verificationId: string; code: string
       if (!inventory) return { ok: false, code: 'out_of_stock', message: 'Credits are currently out of stock. Please check back later.' }
 
       const claimedAt = new Date()
-      await tx.execute(sql`INSERT INTO credit_claims (id, campaign_provider_id, guest_id, inventory_id, claimed_at)
-        VALUES (${nanoid()}, ${row.campaign_provider_id}, ${row.guest_id}, ${inventory.id}, ${claimedAt})`)
-      await tx.execute(sql`UPDATE credit_inventory SET status = 'claimed', claimed_at = ${claimedAt}, updated_at = ${claimedAt} WHERE id = ${inventory.id}`)
+      await tx.insert(creditClaims).values({
+        id: nanoid(),
+        campaignProviderId: row.campaign_provider_id,
+        guestId: row.guest_id,
+        inventoryId: inventory.id,
+        claimedAt,
+      })
+      await tx.update(creditInventory).set({
+        status: 'claimed',
+        claimedAt,
+        updatedAt: claimedAt,
+      }).where(eq(creditInventory.id, inventory.id))
       return { ok: true, code: 'claimed', credit: revealCredit(inventory.encrypted_value), message: 'Credit claimed successfully.' }
     })
   } catch (error) {
