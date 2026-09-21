@@ -2,7 +2,7 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from '@/db'
 import { account, session, user, verification } from '@/db/schema'
-import { SUPER_USER_EMAIL } from '@/lib/auth/admin'
+import { shouldAutoApproveSuperUserSignup } from '@/lib/auth/admin'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -44,7 +44,7 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (nextUser) => {
-          const isSuperUser = nextUser.email.toLowerCase() === SUPER_USER_EMAIL
+          const isSuperUser = shouldAutoApproveSuperUserSignup(nextUser.email)
           return {
             data: {
               ...nextUser,
