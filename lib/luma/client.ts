@@ -1,11 +1,17 @@
 import 'server-only'
 
-import { asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { lumaEvents } from '@/db/schema'
+import { mergeLumaEventSnapshots } from '@/lib/luma/snapshots'
 import type { CommunityEvent } from '@/lib/luma/types'
 
 const LUMA_BASE = 'https://public-api.luma.com'
+const LUMA_LIST_API_SOURCE = 'luma-list-api'
+
+function isListApiSnapshotSql () {
+  return sql`(coalesce(${lumaEvents.rawPayload}->>'source', '') = ${LUMA_LIST_API_SOURCE} OR jsonb_exists(${lumaEvents.rawPayload}, 'startAt'))`
+}
 
 type LumaListResponse = {
   entries?: Array<{
@@ -57,7 +63,7 @@ async function persistFetchedEvents (events: CommunityEvent[]) {
       url: event.url,
       coverUrl: event.coverUrl,
       status: 'active' as const,
-      rawPayload: event,
+      rawPayload: { ...event, source: LUMA_LIST_API_SOURCE },
       updatedAt: new Date(),
     })))
     .onConflictDoUpdate({
@@ -72,7 +78,28 @@ async function persistFetchedEvents (events: CommunityEvent[]) {
         rawPayload: sql`excluded.raw_payload`,
         updatedAt: sql`excluded.updated_at`,
       },
+      where: isListApiSnapshotSql(),
     })
+}
+
+async function getWebhookBackedLumaEvents (): Promise<CommunityEvent[]> {
+  const rows = await db
+    .select()
+    .from(lumaEvents)
+    .where(and(
+      eq(lumaEvents.status, 'active'),
+      sql`NOT ${isListApiSnapshotSql()}`
+    ))
+    .orderBy(asc(lumaEvents.startAt))
+
+  return rows.map((event) => ({
+    id: event.id,
+    title: event.title,
+    startAt: event.startAt.toISOString(),
+    endAt: event.endAt?.toISOString() ?? null,
+    url: event.url,
+    coverUrl: event.coverUrl,
+  }))
 }
 
 async function getStoredLumaEvents (): Promise<CommunityEvent[]> {
@@ -144,7 +171,12 @@ export async function getLumaEvents (): Promise<CommunityEvent[]> {
       } catch (err) {
         console.error('persistFetchedEvents', err)
       }
-      return fetched
+      try {
+        return mergeLumaEventSnapshots(fetched, await getWebhookBackedLumaEvents())
+      } catch (err) {
+        console.error('getWebhookBackedLumaEvents', err)
+        return fetched
+      }
     }
   } catch (err) {
     console.error('fetchLumaEventsFromApi', err)
