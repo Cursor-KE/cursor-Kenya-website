@@ -4,11 +4,12 @@ import { notFound } from 'next/navigation'
 import { db } from '@/db'
 import { creditCampaignProviders, creditCampaigns, creditProviders } from '@/db/schema'
 import { CreditClaimClient } from './credit-claim-client'
+import { isCreditCampaignPublic } from '@/lib/credits/core'
 
 export default async function CreditClaimPage ({ params }: { params: Promise<{ campaignSlug: string }> }) {
   const { campaignSlug } = await params
   const [campaign] = await db.select().from(creditCampaigns).where(eq(creditCampaigns.slug, campaignSlug)).limit(1)
-  if (!campaign || campaign.status === 'archived') notFound()
+  if (!campaign || !isCreditCampaignPublic(campaign)) notFound()
   const allocations = await db.select({
     id: creditCampaignProviders.id, active: creditCampaignProviders.active,
     instructions: creditCampaignProviders.publicInstructions,
