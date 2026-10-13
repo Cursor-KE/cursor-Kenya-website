@@ -5,9 +5,27 @@ export const MAX_CSV_BYTES = 1_000_000
 export const MAX_CSV_ROWS = 5_000
 export const VERIFICATION_TTL_MINUTES = 10
 export const VERIFICATION_MAX_ATTEMPTS = 5
+export type CreditCampaignStatus = 'draft' | 'active' | 'paused' | 'ended' | 'archived'
+
+type CreditCampaignLifecycle = {
+  status: CreditCampaignStatus
+  claimStartsAt: Date | null
+  claimEndsAt: Date | null
+}
 
 export function canCreateCreditCampaign (role: 'super_user' | 'admin'): boolean {
   return role === 'super_user'
+}
+
+export function isCreditCampaignPublic (campaign: { status: CreditCampaignStatus }): boolean {
+  return campaign.status !== 'draft' && campaign.status !== 'archived'
+}
+
+export function isCreditCampaignClaimOpen (campaign: CreditCampaignLifecycle, now = new Date()): boolean {
+  if (campaign.status !== 'active') return false
+  if (campaign.claimStartsAt && campaign.claimStartsAt > now) return false
+  if (campaign.claimEndsAt && campaign.claimEndsAt < now) return false
+  return true
 }
 
 export const emailSchema = z.string().trim().toLowerCase().email().max(320)

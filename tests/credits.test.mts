@@ -3,6 +3,8 @@ import test from 'node:test'
 import {
   canCreateCreditCampaign,
   creditFingerprint,
+  isCreditCampaignClaimOpen,
+  isCreditCampaignPublic,
   maskCredit,
   normalizeEmail,
   previewGuestCsv,
@@ -14,6 +16,25 @@ import {
 test('only super users can create credit campaigns', () => {
   assert.equal(canCreateCreditCampaign('super_user'), true)
   assert.equal(canCreateCreditCampaign('admin'), false)
+})
+
+test('credit campaign lifecycle controls public visibility and claim access', () => {
+  const now = new Date('2026-10-13T11:00:00.000Z')
+  const openCampaign = { status: 'active' as const, claimStartsAt: null, claimEndsAt: null }
+
+  assert.equal(isCreditCampaignPublic({ status: 'draft' }), false)
+  assert.equal(isCreditCampaignPublic({ status: 'active' }), true)
+  assert.equal(isCreditCampaignPublic({ status: 'paused' }), true)
+  assert.equal(isCreditCampaignPublic({ status: 'ended' }), true)
+  assert.equal(isCreditCampaignPublic({ status: 'archived' }), false)
+
+  assert.equal(isCreditCampaignClaimOpen(openCampaign, now), true)
+  assert.equal(isCreditCampaignClaimOpen({ ...openCampaign, status: 'draft' }, now), false)
+  assert.equal(isCreditCampaignClaimOpen({ ...openCampaign, status: 'paused' }, now), false)
+  assert.equal(isCreditCampaignClaimOpen({ ...openCampaign, status: 'ended' }, now), false)
+  assert.equal(isCreditCampaignClaimOpen({ ...openCampaign, claimStartsAt: new Date('2026-10-13T11:01:00.000Z') }, now), false)
+  assert.equal(isCreditCampaignClaimOpen({ ...openCampaign, claimEndsAt: new Date('2026-10-13T10:59:00.000Z') }, now), false)
+  assert.equal(isCreditCampaignClaimOpen({ ...openCampaign, claimStartsAt: now, claimEndsAt: now }, now), true)
 })
 
 test('guest emails are normalized and duplicate CSV rows are skipped in preview', () => {

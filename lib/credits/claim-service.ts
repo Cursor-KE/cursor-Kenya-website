@@ -7,6 +7,7 @@ import { creditCampaigns, creditGuests, creditVerifications } from '@/db/schema'
 import { sendEmail } from '@/lib/email/nodemailer'
 import {
   hashVerificationValue,
+  isCreditCampaignClaimOpen,
   normalizeEmail,
   revealCredit,
   VERIFICATION_MAX_ATTEMPTS,
@@ -26,9 +27,16 @@ export async function requestClaimVerification (input: { campaignSlug: string; e
   const normalizedEmail = normalizeEmail(input.email)
   const ipHash = hashVerificationValue(`ip:${input.ip}`)
   const since = new Date(Date.now() - 15 * 60_000)
-  const [campaign] = await db.select({ id: creditCampaigns.id, name: creditCampaigns.name })
+  const [campaign] = await db.select({
+    id: creditCampaigns.id,
+    name: creditCampaigns.name,
+    status: creditCampaigns.status,
+    claimStartsAt: creditCampaigns.claimStartsAt,
+    claimEndsAt: creditCampaigns.claimEndsAt,
+  })
     .from(creditCampaigns).where(eq(creditCampaigns.slug, input.campaignSlug)).limit(1)
   if (!campaign) return { ok: true, message: GENERIC_VERIFICATION_MESSAGE }
+  if (!isCreditCampaignClaimOpen(campaign)) return { ok: true, message: GENERIC_VERIFICATION_MESSAGE }
 
   const [[emailRate], [ipRate]] = await Promise.all([
     db.select({ value: count() }).from(creditVerifications).where(and(
