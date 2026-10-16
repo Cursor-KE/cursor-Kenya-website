@@ -12,7 +12,7 @@ import {
   updateShowcaseStatus,
 } from '@/lib/actions/showcase'
 import type { ShowcaseSavedReview, ShowcaseReviewResult } from '@/lib/ai/showcase-review-schema'
-import { cloudinaryScaledUrl } from '@/lib/cloudinary/delivery-url'
+import { cloudinaryScaledUrl, isCloudinaryDeliveryUrl } from '@/lib/cloudinary/delivery-url'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -463,6 +463,7 @@ export function ShowcaseAdminClient ({
             const rowOrderIndex = rowOrderIndexById.get(row.id) ?? 0
             const isFirstRow = rowOrderIndex === 0
             const isLastRow = rowOrderIndex === rows.length - 1
+            const screenshotUrls = row.screenshotUrls.filter(isCloudinaryDeliveryUrl)
 
             return (
               <li
@@ -515,21 +516,27 @@ export function ShowcaseAdminClient ({
                   <div className="min-w-0 space-y-4">
                     <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)]">
                       <div className="flex gap-2 overflow-x-auto pb-1 lg:max-w-[20rem] lg:flex-wrap lg:overflow-visible lg:pb-0">
-                        {row.screenshotUrls.slice(0, 3).map((url, j) => (
-                          <div
-                            key={`${row.id}-thumb-${j}`}
-                            className="relative h-20 w-32 shrink-0 overflow-hidden rounded-xl border border-border bg-muted"
-                          >
-                            <Image
-                              src={cloudinaryScaledUrl(url, 240)}
-                              alt={`Screenshot ${j + 1} for ${row.title}`}
-                              width={240}
-                              height={150}
-                              className="h-full w-full object-cover"
-                              unoptimized
-                            />
+                        {screenshotUrls.length > 0 ? (
+                          screenshotUrls.slice(0, 3).map((url, j) => (
+                            <div
+                              key={`${row.id}-thumb-${j}`}
+                              className="relative h-20 w-32 shrink-0 overflow-hidden rounded-xl border border-border bg-muted"
+                            >
+                              <Image
+                                src={cloudinaryScaledUrl(url, 240)}
+                                alt={`Screenshot ${j + 1} for ${row.title}`}
+                                width={240}
+                                height={150}
+                                className="h-full w-full object-cover"
+                                unoptimized
+                              />
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex h-20 w-32 shrink-0 items-center justify-center rounded-xl border border-dashed border-border bg-muted px-3 text-center text-xs text-muted-foreground">
+                            No renderable screenshots
                           </div>
-                        ))}
+                        )}
                       </div>
                       <div className="min-w-0 space-y-3">
                         <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">{row.description}</p>

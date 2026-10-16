@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { getFeaturedCommunityShowcase } from '@/lib/queries'
-import { cloudinaryScaledUrl } from '@/lib/cloudinary/delivery-url'
+import { cloudinaryScaledUrl, isCloudinaryDeliveryUrl } from '@/lib/cloudinary/delivery-url'
 import { cn } from '@/lib/utils'
 
 export async function HomeCommunityShowcase () {
@@ -39,7 +39,7 @@ export async function HomeCommunityShowcase () {
         </div>
         <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((p) => {
-            const thumb = p.screenshotUrls[0]
+            const thumb = p.screenshotUrls.find(isCloudinaryDeliveryUrl)
             return (
               <li key={p.id}>
                 <Link
