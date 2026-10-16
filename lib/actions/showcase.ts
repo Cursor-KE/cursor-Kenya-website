@@ -86,7 +86,7 @@ export async function submitCommunityShowcase (input: {
   if (!signals.screenshotCountOk) {
     return {
       ok: false,
-      message: `Add ${SHOWCASE_SCREENSHOT_MIN}-${SHOWCASE_SCREENSHOT_MAX} valid https screenshots.`,
+      message: `Add ${SHOWCASE_SCREENSHOT_MIN}-${SHOWCASE_SCREENSHOT_MAX} valid uploaded screenshots.`,
     }
   }
   if (signals.duplicateScreenshots) {

@@ -13,6 +13,7 @@ import {
 } from '../lib/ai/showcase-review-handler.ts'
 import { showcaseReviewResultSchema } from '../lib/ai/showcase-review-schema.ts'
 import { evaluateShowcasePolicy } from '../lib/ai/showcase-policy.ts'
+import { isCloudinaryDeliveryUrl } from '../lib/cloudinary/delivery-url.ts'
 import { getShowcaseValidationSignals } from '../lib/showcase/validation.ts'
 
 const submission = {
@@ -23,7 +24,10 @@ const submission = {
   repoUrl: 'https://github.com/example/repo',
   builderName: 'Ada',
   builderEmail: 'ada@example.com',
-  screenshotUrls: ['https://cdn.example.com/1.png', 'https://cdn.example.com/2.png'],
+  screenshotUrls: [
+    'https://res.cloudinary.com/demo/image/upload/v1710000000/showcase/1.png',
+    'https://res.cloudinary.com/demo/image/upload/v1710000000/showcase/2.png',
+  ],
   status: 'pending' as const,
   featured: false,
   createdAt: new Date('2026-04-18T12:00:00.000Z'),
@@ -131,6 +135,37 @@ test('validation signals and policy allow only strong low-risk auto-approval', (
   })
   assert.equal(blocked.decisionMode, 'manual_review')
   assert.deepEqual(blocked.reasons, ['AI recommendation requires manual review.'])
+})
+
+test('showcase screenshot validation only accepts Cloudinary delivery URLs', () => {
+  assert.equal(
+    isCloudinaryDeliveryUrl('https://res.cloudinary.com/demo/image/upload/v1710000000/showcase/1.png'),
+    true
+  )
+  assert.equal(isCloudinaryDeliveryUrl('https://cdn.example.com/1.png'), false)
+
+  const validSignals = getShowcaseValidationSignals({
+    title: 'Cursor Kenya Hub',
+    description: 'A detailed project description with enough words to describe the workflow, audience, implementation, and community impact clearly.',
+    projectUrl: 'https://example.com/demo',
+    repoUrl: 'https://github.com/example/repo',
+    builderName: 'Ada',
+    screenshotUrls: submission.screenshotUrls,
+  })
+  assert.equal(validSignals.screenshotCountOk, true)
+
+  const invalidSignals = getShowcaseValidationSignals({
+    title: 'Cursor Kenya Hub',
+    description: 'A detailed project description with enough words to describe the workflow, audience, implementation, and community impact clearly.',
+    projectUrl: 'https://example.com/demo',
+    repoUrl: 'https://github.com/example/repo',
+    builderName: 'Ada',
+    screenshotUrls: [
+      'https://res.cloudinary.com/demo/image/upload/v1710000000/showcase/1.png',
+      'https://cdn.example.com/2.png',
+    ],
+  })
+  assert.equal(invalidSignals.screenshotCountOk, false)
 })
 
 test('structured output extractor prefers output_text and rejects refusals', () => {

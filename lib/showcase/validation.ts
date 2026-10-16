@@ -1,3 +1,5 @@
+import { isCloudinaryDeliveryUrl } from '@/lib/cloudinary/delivery-url'
+
 export const SHOWCASE_TITLE_MIN = 8
 export const SHOWCASE_TITLE_MAX = 120
 export const SHOWCASE_DESC_MIN = 80
@@ -71,7 +73,7 @@ export function getShowcaseValidationSignals (input: ShowcaseSubmissionInput): S
     screenshotCountOk:
       screenshotUrls.length >= SHOWCASE_SCREENSHOT_MIN &&
       screenshotUrls.length <= SHOWCASE_SCREENSHOT_MAX &&
-      screenshotUrls.every((u) => u.length <= SHOWCASE_URL_MAX && isHttpsUrl(u)),
+      screenshotUrls.every((u) => u.length <= SHOWCASE_URL_MAX && isCloudinaryDeliveryUrl(u)),
     duplicateScreenshots: uniqueScreenshots.size !== screenshotUrls.length,
   }
 }
@@ -84,7 +86,7 @@ export function getBlockingValidationIssues (signals: ShowcaseValidationSignals)
   if (!signals.builderNameLengthOk) issues.push('Builder name does not meet the required length.')
   if (!signals.projectUrlOk) issues.push('Project URL must be a valid http(s) link.')
   if (!signals.repoUrlOk) issues.push('Repository URL is required and must be a valid http(s) link.')
-  if (!signals.screenshotCountOk) issues.push('Screenshot set must include 2 to 8 valid https URLs.')
+  if (!signals.screenshotCountOk) issues.push('Screenshot set must include 2 to 8 valid Cloudinary image URLs.')
   if (signals.duplicateScreenshots) issues.push('Screenshot URLs must be unique.')
   return issues
 }
