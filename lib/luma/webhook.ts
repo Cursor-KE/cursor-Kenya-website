@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { and, eq, lte } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -27,6 +27,10 @@ type LumaWebhookEventType = z.infer<typeof lumaWebhookEventTypeSchema>
 type LumaWebhookPayload = z.infer<typeof lumaWebhookPayloadSchema>
 
 type DeliveryStatus = 'processed' | 'ignored' | 'failed'
+type StoredDeliveryStatus = DeliveryStatus | 'processing'
+type LumaEventStatus = 'active' | 'canceled'
+
+const PROCESSING_DELIVERY_RETRY_AFTER_MS = 5 * 60 * 1000
 
 function isRecord (value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -66,6 +70,14 @@ function decodeWebhookSecret (secret: string): Buffer {
   return Buffer.from(encoded, 'base64')
 }
 
+function hasWebhookAuthConfigured (): boolean {
+  return Boolean(process.env.LUMA_WEBHOOK_SECRET || process.env.LUMA_WEBHOOK_ROUTE_TOKEN)
+}
+
+function allowMissingWebhookAuthMechanism (): boolean {
+  return process.env.NODE_ENV !== 'production' || hasWebhookAuthConfigured()
+}
+
 function getSignatureHeaders (request: Request) {
   return {
     id: request.headers.get('webhook-id') ?? request.headers.get('svix-id'),
@@ -90,7 +102,7 @@ function parseSignatures (header: string): string[] {
 
 export function verifyLumaWebhookSignature (request: Request, rawBody: string): boolean {
   const secret = process.env.LUMA_WEBHOOK_SECRET
-  if (!secret) return true
+  if (!secret) return allowMissingWebhookAuthMechanism()
 
   const { id, timestamp, signature } = getSignatureHeaders(request)
   if (!id || !timestamp || !signature) return false
@@ -111,7 +123,7 @@ export function verifyLumaWebhookSignature (request: Request, rawBody: string): 
 
 export function verifyLumaWebhookToken (request: Request): boolean {
   const expected = process.env.LUMA_WEBHOOK_ROUTE_TOKEN
-  if (!expected) return true
+  if (!expected) return allowMissingWebhookAuthMechanism()
 
   const url = new URL(request.url)
   const queryToken = url.searchParams.get('token')
@@ -138,7 +150,7 @@ function getEventId (data: Record<string, unknown>): string | null {
   return asString(data.event_id) ?? asString(getNestedRecord(data, 'event')?.id)
 }
 
-function mapEventData (data: unknown, status: 'active' | 'canceled') {
+function mapEventData (data: unknown, status: LumaEventStatus) {
   if (!isRecord(data)) return null
 
   const id = asString(data.id)
@@ -165,6 +177,16 @@ async function upsertLumaEvent (data: unknown, status: 'active' | 'canceled') {
   const event = mapEventData(data, status)
   if (!event) return false
 
+  const [existing] = await db
+    .select({ status: lumaEvents.status })
+    .from(lumaEvents)
+    .where(eq(lumaEvents.id, event.id))
+    .limit(1)
+
+  const nextStatus = status === 'active' && existing?.status === 'canceled'
+    ? 'canceled'
+    : status
+
   await db
     .insert(lumaEvents)
     .values(event)
@@ -176,13 +198,89 @@ async function upsertLumaEvent (data: unknown, status: 'active' | 'canceled') {
         endAt: event.endAt,
         url: event.url,
         coverUrl: event.coverUrl,
-        status: event.status,
+        status: nextStatus,
         rawPayload: event.rawPayload,
         updatedAt: event.updatedAt,
       },
     })
 
   return true
+}
+
+function isRetryableProcessingDelivery (receivedAt: Date): boolean {
+  return receivedAt.getTime() <= Date.now() - PROCESSING_DELIVERY_RETRY_AFTER_MS
+}
+
+async function getStoredDeliveryStatus (deliveryId: string) {
+  const [delivery] = await db
+    .select({
+      status: lumaWebhookDeliveries.status,
+      receivedAt: lumaWebhookDeliveries.receivedAt,
+    })
+    .from(lumaWebhookDeliveries)
+    .where(eq(lumaWebhookDeliveries.id, deliveryId))
+    .limit(1)
+
+  return delivery
+}
+
+async function claimRetryableDelivery (deliveryId: string, status: StoredDeliveryStatus) {
+  const retryStartedBefore = new Date(Date.now() - PROCESSING_DELIVERY_RETRY_AFTER_MS)
+  const retryCondition = status === 'failed'
+    ? eq(lumaWebhookDeliveries.status, 'failed')
+    : and(
+      eq(lumaWebhookDeliveries.status, 'processing'),
+      lte(lumaWebhookDeliveries.receivedAt, retryStartedBefore)
+    )
+
+  const claimed = await db
+    .update(lumaWebhookDeliveries)
+    .set({
+      status: 'processing',
+      error: null,
+      processedAt: null,
+      receivedAt: new Date(),
+    })
+    .where(and(eq(lumaWebhookDeliveries.id, deliveryId), retryCondition))
+    .returning({ id: lumaWebhookDeliveries.id })
+
+  return claimed.length > 0
+}
+
+async function processClaimedDelivery (
+  deliveryId: string,
+  payload: LumaWebhookPayload,
+  objectId: string | null
+) {
+  try {
+    const status = await handleWebhookPayload(payload)
+
+    await db
+      .update(lumaWebhookDeliveries)
+      .set({
+        status,
+        processedAt: new Date(),
+      })
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
+
+    if (status === 'processed') {
+      revalidatePath('/')
+      revalidatePath('/events')
+    }
+
+    return { duplicate: false, eventType: payload.type, objectId, status }
+  } catch (error) {
+    await db
+      .update(lumaWebhookDeliveries)
+      .set({
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown webhook processing error',
+        processedAt: new Date(),
+      })
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
+
+    throw error
+  }
 }
 
 async function upsertEmbeddedEvent (data: Record<string, unknown>) {
@@ -371,38 +469,32 @@ export async function processLumaWebhookBody (rawBody: string) {
     .returning({ id: lumaWebhookDeliveries.id })
 
   if (inserted.length === 0) {
-    return { duplicate: true, eventType: payload.type, objectId }
-  }
-
-  try {
-    const status = await handleWebhookPayload(payload)
-
-    await db
-      .update(lumaWebhookDeliveries)
-      .set({
-        status,
-        processedAt: new Date(),
-      })
-      .where(eq(lumaWebhookDeliveries.id, deliveryId))
-
-    if (status === 'processed') {
-      revalidatePath('/')
-      revalidatePath('/events')
+    const delivery = await getStoredDeliveryStatus(deliveryId)
+    if (!delivery) {
+      throw new Error('Luma webhook delivery could not be claimed for processing')
     }
 
-    return { duplicate: false, eventType: payload.type, objectId, status }
-  } catch (error) {
-    await db
-      .update(lumaWebhookDeliveries)
-      .set({
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown webhook processing error',
-        processedAt: new Date(),
-      })
-      .where(eq(lumaWebhookDeliveries.id, deliveryId))
-
-    throw error
+    switch (delivery.status) {
+      case 'processed':
+      case 'ignored':
+        return { duplicate: true, eventType: payload.type, objectId, status: delivery.status }
+      case 'failed':
+        if (await claimRetryableDelivery(deliveryId, delivery.status)) {
+          return processClaimedDelivery(deliveryId, payload, objectId)
+        }
+        throw new Error('Luma webhook delivery is already being retried')
+      case 'processing':
+        if (isRetryableProcessingDelivery(delivery.receivedAt) && await claimRetryableDelivery(deliveryId, delivery.status)) {
+          return processClaimedDelivery(deliveryId, payload, objectId)
+        }
+        throw new Error('Luma webhook delivery is already processing')
+      default:
+        delivery.status satisfies never
+        throw new Error('Luma webhook delivery has an unknown status')
+    }
   }
+
+  return processClaimedDelivery(deliveryId, payload, objectId)
 }
 
 export type { LumaWebhookEventType }
