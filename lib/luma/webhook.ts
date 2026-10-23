@@ -27,6 +27,7 @@ type LumaWebhookEventType = z.infer<typeof lumaWebhookEventTypeSchema>
 type LumaWebhookPayload = z.infer<typeof lumaWebhookPayloadSchema>
 
 type DeliveryStatus = 'processed' | 'ignored' | 'failed'
+type StoredDeliveryStatus = DeliveryStatus | 'processing'
 
 function isRecord (value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -53,6 +54,10 @@ function asInteger (value: unknown): number | null {
 
 function sha256 (value: string): string {
   return createHash('sha256').update(value).digest('hex')
+}
+
+function shouldRetryStoredDelivery (status: StoredDeliveryStatus): boolean {
+  return status === 'failed' || status === 'processing'
 }
 
 function safeEqual (a: string, b: string): boolean {
@@ -107,6 +112,10 @@ export function verifyLumaWebhookSignature (request: Request, rawBody: string): 
     .digest('base64')
 
   return parseSignatures(signature).some((candidate) => safeEqual(candidate, expected))
+}
+
+export function hasLumaWebhookAuthentication (): boolean {
+  return Boolean(process.env.LUMA_WEBHOOK_SECRET || process.env.LUMA_WEBHOOK_ROUTE_TOKEN)
 }
 
 export function verifyLumaWebhookToken (request: Request): boolean {
@@ -371,7 +380,27 @@ export async function processLumaWebhookBody (rawBody: string) {
     .returning({ id: lumaWebhookDeliveries.id })
 
   if (inserted.length === 0) {
-    return { duplicate: true, eventType: payload.type, objectId }
+    const [existing] = await db
+      .select({ status: lumaWebhookDeliveries.status })
+      .from(lumaWebhookDeliveries)
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
+      .limit(1)
+
+    if (!existing || !shouldRetryStoredDelivery(existing.status)) {
+      return { duplicate: true, eventType: payload.type, objectId }
+    }
+
+    await db
+      .update(lumaWebhookDeliveries)
+      .set({
+        eventType: payload.type,
+        lumaObjectId: objectId,
+        payload: payloadRecord,
+        status: 'processing',
+        error: null,
+        processedAt: null,
+      })
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
   }
 
   try {
