@@ -41,7 +41,14 @@ function encryptionKey (): Buffer | null {
 export function protectCredit (value: string): string {
   const normalized = normalizeCredit(value)
   const key = encryptionKey()
-  if (!key) return `plain:${Buffer.from(normalized, 'utf8').toString('base64')}`
+  if (!key) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('CREDIT_ENCRYPTION_KEY must be configured before storing credit inventory.')
+    }
+
+    return `plain:${Buffer.from(normalized, 'utf8').toString('base64')}`
+  }
+
   const iv = randomBytes(12)
   const cipher = createCipheriv('aes-256-gcm', key, iv)
   const body = Buffer.concat([cipher.update(normalized, 'utf8'), cipher.final()])

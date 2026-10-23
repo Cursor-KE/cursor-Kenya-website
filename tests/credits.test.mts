@@ -47,3 +47,21 @@ test('credit values round-trip through configured encryption', () => {
     else process.env.CREDIT_ENCRYPTION_KEY = previous
   }
 })
+
+test('production credit storage requires an encryption key', () => {
+  const previousKey = process.env.CREDIT_ENCRYPTION_KEY
+  const previousNodeEnv = process.env.NODE_ENV
+  delete process.env.CREDIT_ENCRYPTION_KEY
+  process.env.NODE_ENV = 'production'
+  try {
+    assert.throws(
+      () => protectCredit('https://example.com/redeem/private'),
+      /CREDIT_ENCRYPTION_KEY must be configured/
+    )
+  } finally {
+    if (previousKey === undefined) delete process.env.CREDIT_ENCRYPTION_KEY
+    else process.env.CREDIT_ENCRYPTION_KEY = previousKey
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+    else process.env.NODE_ENV = previousNodeEnv
+  }
+})
