@@ -27,6 +27,7 @@ type LumaWebhookEventType = z.infer<typeof lumaWebhookEventTypeSchema>
 type LumaWebhookPayload = z.infer<typeof lumaWebhookPayloadSchema>
 
 type DeliveryStatus = 'processed' | 'ignored' | 'failed'
+type WebhookDeliveryStatus = 'processing' | DeliveryStatus
 
 function isRecord (value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -122,6 +123,14 @@ export function verifyLumaWebhookToken (request: Request): boolean {
   return [queryToken, headerToken, bearerToken].some((candidate) => (
     Boolean(candidate) && safeEqual(candidate ?? '', expected)
   ))
+}
+
+export function isLumaWebhookVerificationConfigured (): boolean {
+  return Boolean(process.env.LUMA_WEBHOOK_SECRET || process.env.LUMA_WEBHOOK_ROUTE_TOKEN)
+}
+
+export function shouldReplayLumaWebhookDelivery (status: WebhookDeliveryStatus | null | undefined): boolean {
+  return status === 'processing' || status === 'failed'
 }
 
 function getLumaObjectId (payload: LumaWebhookPayload): string | null {
@@ -370,8 +379,27 @@ export async function processLumaWebhookBody (rawBody: string) {
     .onConflictDoNothing()
     .returning({ id: lumaWebhookDeliveries.id })
 
-  if (inserted.length === 0) {
-    return { duplicate: true, eventType: payload.type, objectId }
+  const isDuplicate = inserted.length === 0
+  if (isDuplicate) {
+    const existingDelivery = await db.query.lumaWebhookDeliveries.findFirst({
+      columns: {
+        status: true,
+      },
+      where: eq(lumaWebhookDeliveries.id, deliveryId),
+    })
+
+    if (!shouldReplayLumaWebhookDelivery(existingDelivery?.status)) {
+      return { duplicate: true, eventType: payload.type, objectId, status: existingDelivery?.status }
+    }
+
+    await db
+      .update(lumaWebhookDeliveries)
+      .set({
+        status: 'processing',
+        error: null,
+        processedAt: null,
+      })
+      .where(eq(lumaWebhookDeliveries.id, deliveryId))
   }
 
   try {
@@ -390,7 +418,7 @@ export async function processLumaWebhookBody (rawBody: string) {
       revalidatePath('/events')
     }
 
-    return { duplicate: false, eventType: payload.type, objectId, status }
+    return { duplicate: isDuplicate, retried: isDuplicate, eventType: payload.type, objectId, status }
   } catch (error) {
     await db
       .update(lumaWebhookDeliveries)
