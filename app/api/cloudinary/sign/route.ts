@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary'
 import { NextResponse } from 'next/server'
-import { getCloudinaryUploadFolder, type CloudinaryUploadKind } from '@/lib/cloudinary/folder'
+import { requireApprovedAdmin } from '@/lib/auth/session'
+import { handleCloudinarySignRequest } from '@/lib/cloudinary/signing-handler'
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -8,44 +9,32 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 
-function parseKind (value: unknown): CloudinaryUploadKind {
-  return value === 'showcase' ? 'showcase' : 'gallery'
-}
-
 export async function POST (request: Request) {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME
-  const apiKey = process.env.CLOUDINARY_API_KEY
-  const apiSecret = process.env.CLOUDINARY_API_SECRET
-  if (!cloudName || !apiKey || !apiSecret) {
-    return NextResponse.json({ error: 'Cloudinary is not configured' }, { status: 503 })
-  }
-
-  let kind: CloudinaryUploadKind = 'gallery'
+  let kind: unknown = null
   try {
     if (request.headers.get('content-type')?.includes('application/json')) {
       const body = await request.json() as { kind?: unknown }
-      kind = parseKind(body?.kind)
+      kind = body?.kind ?? null
     } else {
       const url = new URL(request.url)
-      kind = parseKind(url.searchParams.get('kind'))
+      kind = url.searchParams.get('kind')
     }
   } catch {
-    kind = 'gallery'
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
   }
 
-  const folder = getCloudinaryUploadFolder(kind)
-  const timestamp = Math.round(Date.now() / 1000)
-  const signature = cloudinary.utils.api_sign_request(
-    { timestamp, folder },
-    apiSecret
+  const result = await handleCloudinarySignRequest(
+    {
+      kind,
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+      apiKey: process.env.CLOUDINARY_API_KEY,
+      apiSecret: process.env.CLOUDINARY_API_SECRET,
+    },
+    {
+      requireApprovedAdmin,
+      signRequest: (params, apiSecret) => cloudinary.utils.api_sign_request(params, apiSecret),
+    }
   )
 
-  return NextResponse.json({
-    cloudName,
-    apiKey,
-    timestamp,
-    signature,
-    folder,
-    kind,
-  })
+  return NextResponse.json(result.body, { status: result.status })
 }
