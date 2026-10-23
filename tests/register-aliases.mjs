@@ -2,9 +2,13 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { registerHooks } from 'node:module'
 import { pathToFileURL } from 'node:url'
+import { config } from 'dotenv'
 
 const root = path.resolve(import.meta.dirname, '..')
 const extensions = ['.ts', '.tsx', '.mts', '.js', '.mjs']
+
+config({ path: path.join(root, '.env'), quiet: true })
+config({ path: path.join(root, '.env.local'), override: true, quiet: true })
 
 function resolveAppSpecifier (specifier) {
   const basePath = path.join(root, specifier.slice(2))
@@ -32,6 +36,14 @@ function resolveAppSpecifier (specifier) {
 
 registerHooks({
   resolve (specifier, context, nextResolve) {
+    if (specifier === 'next/cache') {
+      return nextResolve(pathToFileURL(path.join(root, 'tests/noop-next-cache.mjs')).href, context)
+    }
+
+    if (specifier === 'server-only') {
+      return nextResolve(pathToFileURL(path.join(root, 'tests/noop-server-only.mjs')).href, context)
+    }
+
     if (specifier.startsWith('@/')) {
       const resolved = resolveAppSpecifier(specifier)
       if (resolved) {
