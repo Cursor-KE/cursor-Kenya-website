@@ -47,3 +47,42 @@ test('credit values round-trip through configured encryption', () => {
     else process.env.CREDIT_ENCRYPTION_KEY = previous
   }
 })
+
+test('production credit storage requires an encryption key', () => {
+  const previousKey = process.env.CREDIT_ENCRYPTION_KEY
+  const previousNodeEnv = process.env.NODE_ENV
+  delete process.env.CREDIT_ENCRYPTION_KEY
+  process.env.NODE_ENV = 'production'
+
+  try {
+    assert.throws(
+      () => protectCredit('private-provider-credit'),
+      /CREDIT_ENCRYPTION_KEY is required/
+    )
+  } finally {
+    if (previousKey === undefined) delete process.env.CREDIT_ENCRYPTION_KEY
+    else process.env.CREDIT_ENCRYPTION_KEY = previousKey
+
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+    else process.env.NODE_ENV = previousNodeEnv
+  }
+})
+
+test('development credit storage keeps the explicit plain fallback', () => {
+  const previousKey = process.env.CREDIT_ENCRYPTION_KEY
+  const previousNodeEnv = process.env.NODE_ENV
+  delete process.env.CREDIT_ENCRYPTION_KEY
+  process.env.NODE_ENV = 'development'
+
+  try {
+    const protectedValue = protectCredit('local-only-credit')
+    assert.match(protectedValue, /^plain:/)
+    assert.equal(revealCredit(protectedValue), 'local-only-credit')
+  } finally {
+    if (previousKey === undefined) delete process.env.CREDIT_ENCRYPTION_KEY
+    else process.env.CREDIT_ENCRYPTION_KEY = previousKey
+
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+    else process.env.NODE_ENV = previousNodeEnv
+  }
+})
