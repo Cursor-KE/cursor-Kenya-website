@@ -5,6 +5,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
+import { marketingNavLinks, withOptionalFrameLink } from '@/lib/marketing/nav'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,15 +16,6 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 
-const baseLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/events', label: 'Events' },
-  { href: '/recaps', label: 'Recaps' },
-  { href: '/gallery', label: 'Gallery' },
-  { href: '/community-showcase', label: 'Showcase' },
-  { href: '/about', label: 'About' },
-]
-
 export function Navbar ({
   showFrameLink = false,
 }: {
@@ -31,13 +23,7 @@ export function Navbar ({
 }) {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const links = showFrameLink
-    ? [
-        ...baseLinks.slice(0, 2),
-        { href: '/getyourcard', label: 'Get your card' },
-        ...baseLinks.slice(2),
-      ]
-    : baseLinks
+  const links = withOptionalFrameLink(marketingNavLinks, showFrameLink)
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/80 bg-background/70 backdrop-blur-xl">
@@ -85,7 +71,12 @@ export function Navbar ({
                   key={l.href}
                   href={l.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  className={cn(
+                    'rounded-lg px-3 py-2 text-sm font-medium',
+                    pathname === l.href || (l.href !== '/' && pathname.startsWith(`${l.href}/`))
+                      ? 'bg-secondary text-foreground'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  )}
                 >
                   {l.label}
                 </Link>
