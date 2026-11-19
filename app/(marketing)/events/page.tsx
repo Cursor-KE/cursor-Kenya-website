@@ -1,3 +1,4 @@
+import { PublicEventsWebMCP } from '@/components/public-events-webmcp'
 import { EventsClient } from '@/app/(marketing)/events/events-client'
 import { FadeIn } from '@/components/motion-fade'
 import { getLumaEventsSafe } from '@/lib/luma/client'
@@ -17,6 +18,7 @@ export default async function EventsPage () {
           </p>
         </FadeIn>
         <div className="mt-12">
+          <PublicEventsWebMCP events={events} scope="events-page" loadedAt={new Date().toISOString()} />
           <EventsClient events={events} />
         </div>
       </div>

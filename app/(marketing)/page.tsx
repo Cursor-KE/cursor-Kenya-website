@@ -1,3 +1,4 @@
+import { PublicEventsWebMCP } from '@/components/public-events-webmcp'
 import { BRAND } from '@/lib/brand'
 import { ArrowRight } from 'lucide-react'
 import { CountdownTimer } from '@/components/countdown-timer'
@@ -35,14 +36,18 @@ async function EventsStrip () {
 
   if (upcoming.length === 0) {
     return (
-      <p className="text-center text-muted-foreground">
-        No upcoming events listed yet. Check back soon.
-      </p>
+      <>
+        <PublicEventsWebMCP events={upcoming} scope="homepage-upcoming-preview" loadedAt={new Date().toISOString()} />
+        <p className="text-center text-muted-foreground">
+          No upcoming events listed yet. Check back soon.
+        </p>
+      </>
     )
   }
 
   return (
     <div className="grid gap-6 md:grid-cols-3">
+      <PublicEventsWebMCP events={upcoming} scope="homepage-upcoming-preview" loadedAt={new Date().toISOString()} />
       {upcoming.map((e) => (
         <EventCard key={e.id} event={e} />
       ))}
