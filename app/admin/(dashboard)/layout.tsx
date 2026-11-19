@@ -13,6 +13,9 @@ import {
   requireApprovedAdmin,
 } from '@/lib/auth/session'
 
+// Admin data is session-specific and must never be prerendered during a build.
+export const dynamic = 'force-dynamic'
+
 /**
  * Auth uses headers()/cookies, so awaiting it in the layout body blocks
  * loading.tsx and freezes the previous page during soft navigations.

@@ -26,3 +26,7 @@ References checked November 19, 2026:
 - https://developer.chrome.com/docs/ai/webmcp/imperative-api
 - https://webmachinelearning.github.io/webmcp/
 - https://github.com/GoogleChromeLabs/use-webmcp-tool
+
+### Build prerequisite discovered during validation
+
+The authenticated admin dashboard layout explicitly uses `dynamic = 'force-dynamic'` so its session-specific queries run at request time, not during static prerendering. The existing admin access gate is unchanged. This does not repair database connectivity: admin requests still require valid database configuration. A local production build can exercise public fallbacks using a non-production dummy database URL; no production credentials are needed for that check.
