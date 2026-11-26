@@ -24,42 +24,6 @@
     "height": 1696
   },
   {
-    "id": "2095028955237548282",
-    "topic": "grok-bot",
-    "event": "Grok Bot Meetup Nairobi",
-    "author": "Blackie",
-    "handle": "blackie_360",
-    "createdAt": "2026-09-02T06:00:01.000Z",
-    "text": "Have you heard about Grok Bot?\n\nJoin us in Nairobi to learn what it is, how it works and how you can use it in your everyday life and projects.\n\n📅 Thursday, September 17\n📍 Nairobi\nRegister: https://luma.com/cursor-0yk6\n#GrokBot #CursorKenya",
-    "imageDescription": "Event flyer for the Grok Bot Meetup in Nairobi.",
-    "width": 780,
-    "height": 1516
-  },
-  {
-    "id": "2090763346329158139",
-    "topic": "cursor-kenya",
-    "event": "Cursor Kenya Build Night",
-    "author": "Blackie",
-    "handle": "blackie_360",
-    "createdAt": "2026-08-21T11:30:00.000Z",
-    "text": "One night. Three products. Build with Cursor, bring it to life with @ElevenLabs, and ship it on @render.\n\nhttps://luma.com/cursor-ps5b",
-    "imageDescription": "Cursor Kenya Build Night event flyer.",
-    "width": 780,
-    "height": 1276
-  },
-  {
-    "id": "2089954338261078377",
-    "topic": "cursor-kenya",
-    "event": "Cursor Kenya Meetup with Yash Gaitonde",
-    "author": "Blackie",
-    "handle": "blackie_360",
-    "createdAt": "2026-08-19T05:55:18.000Z",
-    "text": "A year inside Cursor: from agent infrastructure and RL evals to lessons on where AI coding is heading. Great insights from Yash in Nairobi.\n@cursor_ai",
-    "imageDescription": "A speaker onstage at the Cursor Kenya meetup in Nairobi.",
-    "width": 780,
-    "height": 962
-  },
-  {
     "id": "2088577649388015905",
     "topic": "cursor-kenya",
     "event": "Cafe Cursor Nairobi #2",
