@@ -1,0 +1,38 @@
+[
+  {
+    "id": "2123022665531408426",
+    "topic": "grok-bot",
+    "event": "Grok Bot events in Nairobi and Nakuru",
+    "author": "Tibor (Tee)",
+    "handle": "tibor_tee",
+    "createdAt": "2026-11-18T11:57:01.000Z",
+    "text": "Cursor & Grok Bot events this week, 19–25 Nov. Find one near you 👇",
+    "imageDescription": "World map of Cursor & Grok Bot events 19–25 Nov: Accra, Beijing, Bengaluru, Calgary, Cape Town, Changsha, Copenhagen, Helsinki, Hong Kong, Jimma, Kampala, London, Lusaka, Madrid, Manila, Mendoza, Nairobi, Nakuru, Nijmegen, Orlando, Porto Alegre, Sapporo, Sydney, Tallinn, Thimphu, Volcán",
+    "width": 780,
+    "height": 864
+  },
+  {
+    "id": "2108210075332477089",
+    "topic": "grok-bot",
+    "event": "Grok Bot Kenya Workshop",
+    "author": "Blackie",
+    "handle": "blackie_360",
+    "createdAt": "2026-10-08T14:57:05.000Z",
+    "text": "Live from the Grok Bot Kenya Workshop at @NodeNBO 🍕\n\nThe room was getting hungry, so I asked my @grok Bot to sort it out. It searched Glovo, worked out how much pizza we'd need, built the cart and got Pizza Inn on the way to Gigiri. All I did was approve the payment.\n\nThis is the kind of thing we're building today.\n\n(P.S. this post was written by Grok Bot too, lol 🤖)",
+    "imageDescription": "Glovo order tracking screen for the pizzas ordered during the workshop.",
+    "width": 780,
+    "height": 1696
+  },
+  {
+    "id": "2088577649388015905",
+    "topic": "cursor-kenya",
+    "event": "Cafe Cursor Nairobi #2",
+    "author": "Immaculate Munde",
+    "handle": "Imm9cul9t3",
+    "createdAt": "2026-08-15T10:44:50.000Z",
+    "text": "@blackie_360 @cursor_ai @cursorcommunity Keeps getting better, @redbull in the house 😝. \n#CursorKe #Cursorai",
+    "imageDescription": "Two photos from Cafe Cursor Nairobi.",
+    "width": 780,
+    "height": 794
+  }
+]
