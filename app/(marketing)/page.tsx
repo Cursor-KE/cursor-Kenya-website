@@ -116,7 +116,7 @@ export default function HomePage () {
             <a
               href={CALL_FOR_SPEAKERS_URL}
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] py-1 pl-1 pr-3 text-xs font-medium text-muted-foreground transition hover:border-primary/40 hover:text-foreground sm:text-sm"
             >
               <span className="rounded-full bg-primary/15 px-2 py-0.5 text-primary">New</span>
@@ -142,7 +142,7 @@ export default function HomePage () {
               <a
                 href={CALL_FOR_SPEAKERS_URL}
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.03] px-6 py-3 text-sm font-semibold text-foreground transition hover:border-white/25 hover:bg-white/[0.06] sm:text-base"
               >
                 Call for Speakers

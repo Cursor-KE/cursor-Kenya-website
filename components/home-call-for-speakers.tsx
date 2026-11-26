@@ -29,7 +29,7 @@ export function HomeCallForSpeakers () {
             <a
               href={CALL_FOR_SPEAKERS_URL}
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[0_8px_30px_-10px_var(--glow-strong)] transition hover:bg-primary/90 sm:text-base"
             >
               Apply to speak

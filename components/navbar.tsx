@@ -77,7 +77,7 @@ export function Navbar ({
           <a
             href={CALL_FOR_SPEAKERS_URL}
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             className="hidden items-center gap-1 rounded-full bg-foreground px-4 py-1.5 text-sm font-semibold text-background transition hover:bg-foreground/90 sm:inline-flex"
           >
             Call for Speakers
@@ -129,7 +129,7 @@ export function Navbar ({
                 <a
                   href={CALL_FOR_SPEAKERS_URL}
                   target="_blank"
-                  rel="noopener"
+                  rel="noopener noreferrer"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="mt-4 inline-flex items-center justify-center gap-1 rounded-full bg-primary px-4 py-2.5 text-base font-semibold text-primary-foreground transition hover:bg-primary/90"
                 >

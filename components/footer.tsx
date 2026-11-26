@@ -38,7 +38,7 @@ export function Footer ({
           <a
             href={CALL_FOR_SPEAKERS_URL}
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             className="text-foreground transition hover:text-primary"
           >
             Call for Speakers<span className="sr-only"> (opens in a new tab)</span>
