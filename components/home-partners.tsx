@@ -38,7 +38,7 @@ export function HomePartners () {
   return (
     <section
       aria-labelledby="partners-heading"
-      className="border-t border-border/60 px-4 py-20 sm:px-6"
+      className="px-4 py-16 sm:px-6 sm:py-20"
     >
       <div className="mx-auto max-w-6xl">
         <FadeIn className="text-center">
@@ -61,7 +61,7 @@ export function HomePartners () {
             {partners.map((partner) => (
               <li
                 key={partner.name}
-                className="flex min-h-44 items-center justify-center bg-background p-8"
+                className="flex min-h-40 items-center justify-center bg-background p-8 transition hover:bg-card"
               >
                 <Image
                   src={partner.logo}

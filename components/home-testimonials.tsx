@@ -14,7 +14,7 @@ export async function HomeTestimonials () {
   if (items.length === 0) return null
 
   return (
-    <section className="border-t border-border/60 bg-card/15 px-4 py-20 sm:px-6">
+    <section className="px-4 py-16 sm:px-6 sm:py-20">
       <div className="mx-auto max-w-6xl">
         <FadeIn>
           <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
