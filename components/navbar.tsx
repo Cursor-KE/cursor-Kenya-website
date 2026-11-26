@@ -19,6 +19,7 @@ const baseLinks = [
   { href: '/', label: 'Home' },
   { href: '/events', label: 'Events' },
   { href: '/recaps', label: 'Recaps' },
+  { href: '/community-posts', label: 'Posts' },
   { href: '/gallery', label: 'Gallery' },
   { href: '/community-showcase', label: 'Showcase' },
   { href: '/about', label: 'About' },

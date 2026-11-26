@@ -12,12 +12,15 @@ export function Footer ({
         <p className="text-center text-sm text-muted-foreground sm:text-left">
           {BRAND.name} — a volunteer-led developer community built around AI-assisted development.
         </p>
-        <div className="flex gap-6 text-sm text-muted-foreground">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm text-muted-foreground sm:justify-end">
           <Link href="/events" className="hover:text-foreground">
             Events
           </Link>
           <Link href="/recaps" className="hover:text-foreground">
             Recaps
+          </Link>
+          <Link href="/community-posts" className="hover:text-foreground">
+            Posts
           </Link>
           {showFrameLink ? (
             <Link href="/getyourcard" className="hover:text-foreground">

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "2123022665531408426",
+    "topic": "grok-bot",
+    "event": "Grok Bot events in Nairobi and Nakuru",
+    "author": "Tibor (Tee)",
+    "handle": "tibor_tee",
+    "createdAt": "2026-11-18T11:57:01.000Z",
+    "text": "Cursor & Grok Bot events this week, 19–25 Nov. Find one near you 👇",
+    "imageDescription": "World map of Cursor & Grok Bot events 19–25 Nov: Accra, Beijing, Bengaluru, Calgary, Cape Town, Changsha, Copenhagen, Helsinki, Hong Kong, Jimma, Kampala, London, Lusaka, Madrid, Manila, Mendoza, Nairobi, Nakuru, Nijmegen, Orlando, Porto Alegre, Sapporo, Sydney, Tallinn, Thimphu, Volcán",
+    "width": 780,
+    "height": 864
+  },
+  {
+    "id": "2108210075332477089",
+    "topic": "grok-bot",
+    "event": "Grok Bot Kenya Workshop",
+    "author": "Blackie",
+    "handle": "blackie_360",
+    "createdAt": "2026-10-08T14:57:05.000Z",
+    "text": "Live from the Grok Bot Kenya Workshop at @NodeNBO 🍕\n\nThe room was getting hungry, so I asked my @grok Bot to sort it out. It searched Glovo, worked out how much pizza we'd need, built the cart and got Pizza Inn on the way to Gigiri. All I did was approve the payment.\n\nThis is the kind of thing we're building today.\n\n(P.S. this post was written by Grok Bot too, lol 🤖)",
+    "imageDescription": "Photo from the Grok Bot Kenya Workshop at NODE Nairobi.",
+    "width": 780,
+    "height": 1696
+  },
+  {
+    "id": "2095028955237548282",
+    "topic": "grok-bot",
+    "event": "Grok Bot Meetup Nairobi",
+    "author": "Blackie",
+    "handle": "blackie_360",
+    "createdAt": "2026-09-02T06:00:01.000Z",
+    "text": "Have you heard about Grok Bot?\n\nJoin us in Nairobi to learn what it is, how it works and how you can use it in your everyday life and projects.\n\n📅 Thursday, September 17\n📍 Nairobi\nRegister: https://luma.com/cursor-0yk6\n#GrokBot #CursorKenya",
+    "imageDescription": "Event flyer for the Grok Bot Meetup in Nairobi.",
+    "width": 780,
+    "height": 1516
+  },
+  {
+    "id": "2090763346329158139",
+    "topic": "cursor-kenya",
+    "event": "Cursor Kenya Build Night",
+    "author": "Blackie",
+    "handle": "blackie_360",
+    "createdAt": "2026-08-21T11:30:00.000Z",
+    "text": "One night. Three products. Build with Cursor, bring it to life with @ElevenLabs, and ship it on @render.\n\nhttps://luma.com/cursor-ps5b",
+    "imageDescription": "Cursor Kenya Build Night event flyer.",
+    "width": 780,
+    "height": 1276
+  },
+  {
+    "id": "2089954338261078377",
+    "topic": "cursor-kenya",
+    "event": "Cursor Kenya Meetup with Yash Gaitonde",
+    "author": "Blackie",
+    "handle": "blackie_360",
+    "createdAt": "2026-08-19T05:55:18.000Z",
+    "text": "A year inside Cursor: from agent infrastructure and RL evals to lessons on where AI coding is heading. Great insights from Yash in Nairobi.\n@cursor_ai",
+    "imageDescription": "Yash Gaitonde speaks at the Cursor Kenya meetup in Nairobi.",
+    "width": 780,
+    "height": 962
+  },
+  {
+    "id": "2088577649388015905",
+    "topic": "cursor-kenya",
+    "event": "Cafe Cursor Nairobi #2",
+    "author": "Immaculate Munde",
+    "handle": "Imm9cul9t3",
+    "createdAt": "2026-08-15T10:44:50.000Z",
+    "text": "@blackie_360 @cursor_ai @cursorcommunity Keeps getting better, @redbull in the house 😝. \n#CursorKe #Cursorai",
+    "imageDescription": "Two photos from Cafe Cursor Nairobi.",
+    "width": 780,
+    "height": 794
+  }
+]
