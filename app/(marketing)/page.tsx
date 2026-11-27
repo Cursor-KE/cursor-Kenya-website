@@ -1,6 +1,6 @@
 import { PublicEventsWebMCP } from '@/components/public-events-webmcp'
 import { BRAND } from '@/lib/brand'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import { CountdownTimer } from '@/components/countdown-timer'
 import { EventCard } from '@/components/event-card'
 import { HomeGalleryMosaic } from '@/components/home-gallery-mosaic'
@@ -8,13 +8,13 @@ import { FadeIn } from '@/components/motion-fade'
 import { FeaturedVideosClient } from '@/components/featured-videos-client'
 import { HomePartners } from '@/components/home-partners'
 import Link from 'next/link'
-import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getNextUpcomingEvent, getUpcomingLumaEvents } from '@/lib/luma/client'
 import { HomeCommunityShowcase } from '@/components/home-community-showcase'
 import { HomeTestimonials } from '@/components/home-testimonials'
 import { getFeaturedVideos, getHomeFeaturedImages } from '@/lib/queries'
-import { cn } from '@/lib/utils'
+import { CALL_FOR_SPEAKERS_URL } from '@/lib/links'
+import { HomeCallForSpeakers } from '@/components/home-call-for-speakers'
 import { Suspense } from 'react'
 
 export const revalidate = 60
@@ -22,12 +22,35 @@ export const revalidate = 60
 async function HeroCountdown () {
   const next = await getNextUpcomingEvent()
   return (
-    <div className="mt-12">
-      <p className="mb-4 text-center text-sm font-medium uppercase tracking-[0.2em] text-primary">
+    <div className="rounded-3xl border border-white/[0.08] bg-card/60 p-6 backdrop-blur-md sm:p-8">
+      <p className="mb-5 text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground">
         Next {BRAND.name} Event
       </p>
-      <CountdownTimer targetIso={next?.startAt ?? null} />
+      <CountdownTimer targetIso={next?.startAt ?? null} className="justify-start" />
+      {next ? (
+        <p className="mt-6 line-clamp-2 text-sm text-foreground/90">{next.title}</p>
+      ) : null}
     </div>
+  )
+}
+
+function SectionHeading ({
+  title,
+  description,
+  action,
+}: {
+  title: string
+  description?: string
+  action?: React.ReactNode
+}) {
+  return (
+    <FadeIn className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{title}</h2>
+        {description ? <p className="mt-2 text-muted-foreground">{description}</p> : null}
+      </div>
+      {action}
+    </FadeIn>
   )
 }
 
@@ -57,15 +80,18 @@ async function EventsStrip () {
 
 async function FeaturedVideos () {
   const list = await getFeaturedVideos().catch(() => null)
-  if (!list) {
-    return (
-      <p className="text-center text-sm text-muted-foreground">
-        Connect the database to load featured videos.
-      </p>
-    )
-  }
+  if (!list || list.length === 0) return null
 
-  return <FeaturedVideosClient videos={list} />
+  return (
+    <section className="px-4 py-16 sm:px-6 sm:py-20">
+      <div className="mx-auto max-w-6xl">
+        <SectionHeading title="Featured videos" description="Curated talks and recordings from the community." />
+        <div className="mt-10">
+          <FeaturedVideosClient videos={list} />
+        </div>
+      </div>
+    </section>
+  )
 }
 
 async function FeaturedPhotos () {
@@ -76,75 +102,77 @@ async function FeaturedPhotos () {
 export default function HomePage () {
   return (
     <div className="flex flex-col">
-      <section className="relative overflow-hidden px-4 pb-24 pt-16 sm:px-6 sm:pt-24">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgb(245_78_0/0.18),transparent)]" />
-        <div className="relative mx-auto max-w-4xl text-center">
+      <section className="relative overflow-hidden px-4 pb-16 pt-14 sm:px-6 sm:pb-24 sm:pt-24">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgb(255_255_255/0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgb(255_255_255/0.035)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_45%_at_50%_-10%,rgb(245_78_0/0.22),transparent)]"
+        />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-16">
           <FadeIn>
-            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl sm:leading-[1.05]">
+            <a
+              href={CALL_FOR_SPEAKERS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] py-1 pl-1 pr-3 text-xs font-medium text-muted-foreground transition hover:border-primary/40 hover:text-foreground sm:text-sm"
+            >
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-primary">New</span>
+              Speaker applications are open
+              <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" />
+              <span className="sr-only">(opens in a new tab)</span>
+            </a>
+            <h1 className="mt-6 text-5xl font-semibold tracking-[-0.03em] text-foreground sm:text-6xl lg:text-7xl lg:leading-[1.02]">
               {BRAND.name}
             </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
               Meetups, hackathons, and workshops for builders across Kenya using Cursor and AI to build
               and ship faster.
             </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Link
+                href="/events"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[0_8px_30px_-10px_var(--glow-strong)] transition hover:bg-primary/90 sm:text-base"
+              >
+                View events
+                <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </Link>
+              <a
+                href={CALL_FOR_SPEAKERS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.03] px-6 py-3 text-sm font-semibold text-foreground transition hover:border-white/25 hover:bg-white/[0.06] sm:text-base"
+              >
+                Call for Speakers
+                <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
+                <span className="sr-only">(opens in a new tab)</span>
+              </a>
+            </div>
           </FadeIn>
 
-          <Suspense
-            fallback={
-              <div className="mt-12 flex justify-center gap-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-24 w-24 rounded-2xl" />
-                ))}
-              </div>
-            }
-          >
-            <HeroCountdown />
-          </Suspense>
-
-          <FadeIn delay={0.1} className="mt-10 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/events"
-              className={cn(
-                buttonVariants({ size: 'lg' }),
-                'rounded-xl bg-gradient-to-r from-primary to-primary-end px-8 text-primary-foreground shadow-[0_0_40px_-8px_var(--glow-strong)] transition hover:scale-[1.02] hover:opacity-95'
-              )}
+          <FadeIn delay={0.1}>
+            <Suspense
+              fallback={<Skeleton className="h-56 w-full rounded-3xl" />}
             >
-              View events
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-            <Link
-              href="/about"
-              className={cn(
-                buttonVariants({ variant: 'outline', size: 'lg' }),
-                'rounded-xl border-border/80 bg-card/40'
-              )}
-            >
-              About the community
-            </Link>
+              <HeroCountdown />
+            </Suspense>
           </FadeIn>
         </div>
       </section>
 
-      <Suspense
-        fallback={
-          <div className="border-t border-border/60 px-4 py-16 sm:px-6">
-            <Skeleton className="mx-auto h-[min(420px,55vh)] max-w-6xl rounded-3xl" />
-          </div>
-        }
-      >
-        <FeaturedPhotos />
-      </Suspense>
-
-      <section className="border-t border-border/60 bg-card/20 px-4 py-20 sm:px-6">
+      <section className="px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-6xl">
-          <FadeIn>
-            <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-              Upcoming events
-            </h2>
-            <p className="mt-2 text-muted-foreground">
-              Pulled from our Luma calendar — revalidated every minute.
-            </p>
-          </FadeIn>
+          <SectionHeading
+            title="Upcoming events"
+            action={
+              <Link href="/events" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                All events
+                <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </Link>
+            }
+          />
           <div className="mt-10">
             <Suspense
               fallback={
@@ -161,21 +189,21 @@ export default function HomePage () {
         </div>
       </section>
 
-      <section className="border-t border-border/60 px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-6xl">
-          <FadeIn>
-            <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-              Featured videos
-            </h2>
-            <p className="mt-2 text-muted-foreground">Curated talks and recordings from the community.</p>
-          </FadeIn>
-          <div className="mt-10">
-            <Suspense fallback={<Skeleton className="h-48 w-full rounded-2xl" />}>
-              <FeaturedVideos />
-            </Suspense>
+      <HomeCallForSpeakers />
+
+      <Suspense
+        fallback={
+          <div className="px-4 py-16 sm:px-6">
+            <Skeleton className="mx-auto h-[min(420px,55vh)] max-w-6xl rounded-3xl" />
           </div>
-        </div>
-      </section>
+        }
+      >
+        <FeaturedPhotos />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <FeaturedVideos />
+      </Suspense>
 
       <Suspense fallback={null}>
         <HomeCommunityShowcase />

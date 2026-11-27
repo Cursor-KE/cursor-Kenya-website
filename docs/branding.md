@@ -5,7 +5,7 @@
 - Navigation: `components/brand-wordmark.tsx`.
 - Icon: `app/icon.png`; editable source: `public/brand/community-icon.svg`.
 - Social previews: `app/opengraph-image.jpg` and `app/twitter-image.jpg` (1200 × 630); editable source: `public/brand/social-preview.svg`.
-- Active card: `public/frame-card-assets/spacexai-kenya-card-template.png` (1024 × 1024). The original template remains available for historical use.
+- Active card: `public/frame-card-assets/spacexai-kenya-card-template.png` (1024 × 1024).
 
 The card branding was edited with the built-in image generation tool. Only the top wordmark, bottom wordmark, and first hashtag region were composited into the original template; artwork and photo placement outside these regions are pixel-identical to the original. Regions in original-image pixels: `(300, 35, 424, 50)`, `(260, 945, 504, 52)`, and `(260, 859, 174, 37)` (x, y, width, height).
 

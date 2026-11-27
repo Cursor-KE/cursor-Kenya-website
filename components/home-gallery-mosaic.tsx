@@ -67,7 +67,7 @@ export function HomeGalleryMosaic ({ photos }: { photos: HomeGalleryPhoto[] }) {
   }
 
   return (
-    <section className="border-t border-border/60 bg-gradient-to-b from-card/15 to-transparent px-4 py-20 sm:px-6">
+    <section className="px-4 py-16 sm:px-6 sm:py-20">
       <div className="mx-auto max-w-6xl">
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

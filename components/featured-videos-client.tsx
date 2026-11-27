@@ -20,13 +20,8 @@ export function FeaturedVideosClient ({
 }) {
   const [videoOpen, setVideoOpen] = useState<string | null>(null)
 
-  if (videos.length === 0) {
-    return (
-      <p className="text-center text-sm text-muted-foreground">
-        Featured videos will appear here once added in admin.
-      </p>
-    )
-  }
+  if (videos.length === 0) return null
+
   return (
     <>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
